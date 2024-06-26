@@ -1,0 +1,19 @@
+{
+  "title": "Rust勉強手記ーOption Enum",
+  "closed": false,
+  "archived": false,
+  "created_at": "2022-12-29",
+  "comments": [
+    {
+      "author": "convers39",
+      "created_at": "2022-12-29",
+      "body_markdown": "`Option`は`Enum`型の一つで、Rustlangの中で`null`という概念を表している。Rustには`null`というデータタイプがなく、Option Enumの形で扱うことになる。直接のnull扱いを避けて、コードの安全性を高められる。\n```rust\nenum Option<T> {\n    None,\n    Some(T),\n}\n```\nこの定義を見た瞬間、なんか見覚えあるな。。と思ったら、FPのMaybe functorとかなり機能的に似ているのでは？\n\n```ts\nclass Functor {\n  constructor(val) { \n    this.val = val; \n  }\n\n  map(f) {\n    return new Functor(f(this.val));\n  }\n  // of aka unit functor, replace new keyword to create a new instance of Functor\n  static of(val) {\n    return new Functor(val);\n  };\n}\n\nclass Maybe extends Functor {\n  map(f) {\n    return this.val ? Maybe.of(f(this.val)) : Maybe.of(null);\n  }\n}\n```\n\nという線で探してみると、[こちら](https://hoverbear.org/blog/option-monads-in-rust/)の記事を見つけた。\n\nmatchとの併用によって、必ずNullのパターンが処理されるので、非常にrobustなコードに書かせられる。\n\n新しい知識獲得と、既存の知識とのリンク付けの二重の嬉しさの一時でした。",
+      "body_updated_at": "2022-12-29"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2022-12-29",
+      "body_markdown": "Maybe functorは同時にapplicative (AP functor), monadでもある。[この記事](https://qiita.com/suin/items/0255f0637921dcdfe83b)がある程度分かりやすいかも。"
+    }
+  ]
+}

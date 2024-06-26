@@ -1,0 +1,30 @@
+{
+  "title": "Rust勉強手記ーTraitはinterfaceなのか",
+  "closed": false,
+  "archived": false,
+  "created_at": "2023-01-02",
+  "comments": [
+    {
+      "author": "convers39",
+      "created_at": "2023-01-02",
+      "body_markdown": "> Note: Traits are similar to a feature often called interfaces in other languages, although with some differences.\n\n公式ではtraitの節の冒頭に、このような内容を残しつつ、結局何が違うか明言していなかった。。\n\nで、この問題について少し考えてみたいと思います。\n\nインターフェースと言っても、正直自分が接したことのある言語で言えば、TypeScript, PHP, Javaあたりだけですが、この中でも言語によって多少違いがあったりします。TSのデータの型定義に使う使い方は少し独特かもしれないが、結局インターフェースは契約のガードと考える観点から、クラスにimplementするのみに限らず、型定義に使うのも違和感がない気もする。JavaとPHPのインターフェースの使い方がむしろ近いかなと。\n\nその細かい比較はさておき、コード間の契約、再利用可能なコード、コードの抽象化と分割といった目的・機能から言う「インターフェース」と、Rustのトレイトについて、何が近いか、何が違うか、を少しまとめてみようと。\n"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-01-02",
+      "body_markdown": "まず近いところから見てみると、やはり目的・機能がかなり一致しているところかな。\n\ntraitにしても、interfaceにしても、前述の**コード間の契約、再利用可能なコード、コードの抽象化と分割**と言う目的に一致している。また、OOPの継承で導入された結合度を下げる点でも近いかと。\n\n継承では、子クラスの実装がどうしても親クラスの実装に依存・影響される問題があるが、trait/interfaceは実装なし（もしくはデフォルト実装のみ）の状態で、シグネチャーのみを定義することで、この具体的な実装(concrete implementation}への依存性を無くしている。それと同時に、コード再利用の観点からは継承には劣らない。\n\nもちろん、このメソッドの中身といった具体的な実装に関心を持たないのは、コードの抽象化として考えられる。pythonのようなインターフェースのない言語では、abstract classの形である意味でインターフェースの *実装* になっているような気もする。まさに「抽象的」そのもの。ただ、インターフェースとトレイトには基本、ステートを持たせないので、この意味で言えばabstract classの「クラス」＝インスタンスを作ってステートを持たせる、と言う観点とはかなり異なる。Javaのインターフェースのフィールドはすべて`public static final`でもあるし、rustのトレイトにもメソッドと定数以外の追加ができないみたい。\n\nインターフェースを小さいパーツとして考えて、コードの分割にもかなり役立つ。多くの本で言われているが、複数のメソッドを一つのインターフェースに入れたい時は、機能は**直交**するかが、別のインターフェースに分ける判断基準となる。\n\n「契約」と言うのも、xxインターフェース実装しているクラスのみとか、xxトレイト実装しているストラクトのみが引数として入れられるよ、という「コード実行の前置き条件バリデーション」機能を持っている。後置き条件、例えばリターン値のタイプ制限も同様可能。\n\nこのような若干ハイレベルからの鳥瞰ですが、両者は一致するところが多く考えられるでしょう。上記をまとめてみると：\n\n- 具体的な実装はなく、関数・メソッドの定義のみ\n- もしくはデフォルト実装のみ\n- 行為・機能のみ定義し、属性（変数!=定数）は定義しない（インスタンス化、ステート持ちはできない）\n- 複数のメソッドを一つのtrait/IFaceに定義可能\n- 関数のパラメーターの型定義としてつけられる\n- リターン値の型定義としてつけられる",
+      "body_updated_at": "2023-01-02"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-01-02",
+      "body_markdown": "次は違うところを見てみたい。相違点はRustの設計哲学・仕様に関わる部分が多い気がする。\n\n一つは**既存のタイプに機能を追加・上書きすることができる**ところかと思う。この「既存のタイプ」と言うのは、自分が定義したものだけでなく、ビルドインのものや外部クレート（ライブラリー）のものにも有効。これは、トレイトで定義したメソッドは、トレイトが存在するスコープに限られるからだ。\n\n```rust\nfn main() {\n    {\n        trait Hash {\n            fn hash(&self) -> u64;\n        }\n        \n        impl Hash for bool {\n            fn hash(&self) -> u64 {\n                if *self { 0 } else { -1 }\n            }\n        }\n        println!(\"{}\", true.hash());\n    }\n    // println!(\"{}\", true.hash()); -> エラーとなる\n}\n```\n\n例えば上記の例では、ビルトインのブールタイプに`hash`メソッドを追加し、しかもその働きを逆にしてみた。もちろん、`Hash`トレイとは上のブロック内に定義しているので、ブロック外になるとスコープ切りで無効になって、2個目のprintlnはパニックする。このような機能拡張の利便性は、インターフェースには持たない。これはやはりRustの所有権管理の仕様と関わっていて、スコープを超えたタイミングで所有権がなくなる（[RAII](https://doc.rust-lang.org/rust-by-example/scope/raii.html)）。\n\nただ、これはタイプまたはトレイトのいずれかがローカルに所有しておかないといけない（orphan rule）。例えば外部ライブラリーAのタイプXに外部ライブラリーBのトレイトYを実装することができない。この時は[newtype pattern](https://doc.rust-lang.org/book/ch19-03-advanced-traits.html#using-the-newtype-pattern-to-implement-external-traits-on-external-types)の解決法がいるらしい。",
+      "body_updated_at": "2023-01-02"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-01-02",
+      "body_markdown": "もう一つは、ジェネリックタイプと同時に使うときに、静的と動的なdispatchが両方できるところ（[参照](https://blog.rust-lang.org/2015/05/11/traits.html)）。\n\nRustはzero-overhead原則に従っている。\n\n> What you don't use, you don't pay for. And further: What you do use, you couldn't hand code any better.\n\nこれはまさに静的と動的な二つの側面と合致する。\n\nジェネリックタイプと使うときに、コンパイラーは具体的に分かるタイプにそれぞれの *インスタンス* を作っている。\n\n```rust\nimpl Hash for i64 {\n    fn hash(&self) -> u64 {\n        *self as u64\n    }\n}\n\nfn print_hash<T: Hash>(t: &T) {\n    println!(\"The hash is {}\", t.hash())\n}\n\n// The compiled code:\n__print_hash_bool(&true);  // invoke specialized bool version directly\n__print_hash_i64(&12_i64);   // invoke specialized i64 version directly\n```\n\nこのように、`print_hash`関数は実際に抽象的なタイプ`T`ではなく、コンパイル時に具体的なタイプにそれぞれバージョンができ、実行時に「どれを使えば良いか」との判断手間が不要となる。\n\nただ、この抽象化を具体化する働きが状況によって変わることもある。例えば、GUIアプリにあるボタンに対して、複数のクリックコールバック関数を登録したい場面がある。それぞれのコールバックの機能が違う可能性が高い。\n\n```rust\nstruct Button<T: ClickCallback> {\n    listeners: Vec<T>,\n    ...\n}\n```\n\nと言うときに、このような定義は`T`を一種類に制限してしまい、`Button`とバイディングする形で一つ`Button`に対して一つのコールバックがあると。もちろんこれは意図から外れている。直すには：\n\n```rust\nstruct Button {\n    listeners: Vec<Box<ClickCallback>>,\n    ...\n}\n```\n\nゲネリックタイプの`T`と、`Button`のバイディングをまず消す。次に`Box`を用いて、ベクターに入っているデータのタイプというのは、`ClickCallback`を実装している**trait object**だと、表している。\n\nこれで実際にコンパイルするときは具体的な実装した *インスタンス* に頼らず、そのインスタンスに指すポインタのベクターとなっているため、抽象化のままで実行時判断するようになる。"
+    }
+  ]
+}

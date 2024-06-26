@@ -1,0 +1,31 @@
+{
+  "title": "pep8ify your Python codeについて",
+  "closed": false,
+  "archived": false,
+  "created_at": "2023-02-13",
+  "comments": [
+    {
+      "author": "convers39",
+      "created_at": "2023-02-13",
+      "body_markdown": "最近久々にpythonを仕事で使うことになって、よっしゃと思いながら、コードスタイルの基準が揃っていなく、少し戸惑う瞬間がありました。\n\npythonのコードスタイルといえば、[pep8](https://peps.python.org/pep-0008/)が最も有名で基準になっていると思います。\n\nそれで早速vimでpep8リンターflake8とフォーマッターのblackをセットアップしてみました。すると面白い現象が出て、仮にblackでフォーマット化しても、flake8では所々で「一行の文字数(line length)が79より超えているよ」との警告が出ています。\n\n調べてみると、どうやら[blackのデフォルト設定](https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html#line-length)では、一行の文字数はpep8の79ではなく、88でした。\n\n> Black defaults to 88 characters per line, which happens to be 10% over 80. This number was found to produce significantly shorter files than sticking with 80 (the most popular), or even 79 (used by the standard library). In general, 90-ish seems like the wise choice."
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-02-13",
+      "body_markdown": "偶然ではないかもしれませんが、別のpythonのルールに従い、pythonicなコードを書くとの内容の記事を読んでいるところで、[こちら](https://youtu.be/wf-BqAjZb8M)のトークがすすめられました。\n\nblackの設定の根拠も同じトークから来ていて、pythonコア開発者でもある、講演者のRaymond Hettinger氏が90ish、90に近い長さが良いと指摘している。\n\nトークではもちろんこれを言うためではない。コードスタイルは大事ではあるが、そのために*もっと大事なこと*を忘れないでほしい、と言うのが観点だと思う。\n\n*もっと大事なこと*を説明するために、[見えないゴリラ](http://www.theinvisiblegorilla.com/gorilla_experiment.html)の実験を引用している。白い服を着ているチームと黒い服を着ているチームが同時にボールをパスし続ける。実験参加者は白い服の人のパス回数を数えるように求められる。ほとんどの参加者は回数を正確に数えられていたが、途中で乱入していたゴリラに全く気づいていなかったようです。\n\n",
+      "body_updated_at": "2023-02-13"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-02-13",
+      "body_markdown": "**もっと大事なこと** とは、いろんな解釈ができますが、トークの文脈では、pythonicなコードになっているかどうか、にあるでしょう。そのためにpythonのdunder methodsのルールを活用してコードを書く必要がると。\n\nこの話は以前pythonを学んだ間も無くみていた[こちら](https://youtu.be/cKPlPJyQrt4)のトークを思い出させてくれました。講演者は、**pythonはプロトコルの言語**と主張していて、当時は正直イマイチ理解が浅く、今振り替えてみると、割と共鳴できるようになった。講演者のvim力に魅了されず、ちゃんと*もっと大事なこと*を理解するように聞くのが難しかったかもしれませんw。\n\nもちろん、この話はpythonに限らずに、他の言語も含めて、コードスタイルで可読性、統一感に貢献するでしょうが、もっと肝心なのはコードがクリーンになっているかどうか、そもそもロジック上の間違い・機能するかどうか、本来コードが解決しようとする問題が解決できているかどうか、といったところにあると思います。\n\npep8ify your code というのが目的ではなく、あくまでもコードの見た目・可読性を向上させる補助手段にすぎない。プログラムは何かしらの問題を解決するために存在するため、この手段は問題の解決に直接寄与しないことがほとんどなので、あまりこちらに気を取られないようにしたほうが良いでしょう。\n",
+      "body_updated_at": "2023-02-13"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-02-13",
+      "body_markdown": "余談ですが、コードスタイルをできるだけプロジェクト開始時に決めておいた方が良い。と言うのは、途中で一気に変更すると、git的にblameが変わるので、結局そのコードが誰が書いたのかが分かりにくくなります。\n\nこの問題について、revisionを無視するように[設定](https://black.readthedocs.io/en/stable/guides/introducing_black_to_your_project.html)でき、例えば一つのファイルでスタイル変更のコミットをリストアップすると[一応可能](https://medium.com/codex/how-to-introduce-a-code-formatter-without-messing-up-git-history-4a16bd074c10)になるでしょうが、一手間はかかることに間違い無いでしょう。",
+      "body_updated_at": "2023-02-13"
+    }
+  ]
+}

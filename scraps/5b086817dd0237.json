@@ -1,0 +1,31 @@
+{
+  "title": "Rust勉強手記ーStringの扱いが面倒",
+  "closed": false,
+  "archived": false,
+  "created_at": "2022-12-30",
+  "comments": [
+    {
+      "author": "convers39",
+      "created_at": "2022-12-30",
+      "body_markdown": "String、文字列型として、python, jsのような高級言語では割とシンプルなデータ型になっているが、rustではかなり複雑になっている。\n\nまずはString型とstr型の違い。Stringはコレクションであり、キャラクターの集合として考えられる。strタイプは通常`&str`の形で見られて、文字列の切片（slice）となっている。\n\nコレクションはheapに保存される、一定の長さを持たない可変なデータタイプ。に対して、strはstackに保存される長さ確定の不可変なタイプ。ただ「string/文字列」という言葉は、いずれを指してもよいみたい。\n\n```rust\n    let data = \"hoge\";\n    let s = data.to_string();\n```\n\nこのようなコードを見たら、「何余計なことやってんだ？」と思ったりするかもしれませんが、`str`（正確で`&str`）から`String`へ変換している。。\n\n```rust\nuse std::any::type_name;\n\nfn type_of<T>(_:T) -> &'static str {\n    type_name::<T>()\n}\n\nfn main() {\n    let data = \"hoge\";\n    let s = data.to_string();\n    println!(\"data type is {}\", type_of(data)); // &str\n    println!(\"s type is {}\", type_of(s)); // alloc::string::String\n}\n```\n\nなので、最初から可変な`String`型が欲しいければ、js, pythonのように`\"\"`で囲むと全く違うことになるので、`String::from(\"xxxx\")`から構成するのが一般的みたい。\n\n"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2022-12-30",
+      "body_markdown": "次は文字列の合併（concatenation）も面倒。\n\nこれは主に所有権（ownership）と絡んでいるが、例えば：\n\n```rust\n    let s1 = String::from(\"Hello, \");\n    let s2 = String::from(\"world!\");\n    let s3 = s1 + s2;\n```\n\nで書くと、`s3`が`hellow world`にならず、パニックしちゃう。。\n\n理由はこの`+`操作の定義、実際は次になっている：\n\n```rust\nfn add(self, s: &str) -> String { ... }\n```\n\nその中`self`はs1に当たり、sはs2のポジションに当たる。そう、s2が定義の`&str`タイプではなく、`String`タイプだからダメなんだ。。\n\n`&str`の形ではレファレンスを渡しているので、所有権の移動（move）が行われず、借りる（borrow）だけになる。逆に言えば、s1はここで`String`のままなので、所有権は`s3`に移動してしまったため、s1へのアクセスができなくなる。これは、文字列の合併により、元の保存するメモリースペースが足りなくなる可能性があるため、所有権を持たないとメモリーのreallocateができないのも原因かと（）。\n\n任意数の`&str`型に対して合併し続けることができるけど、ベースとなる文字列が必ず`String`型でなければならない。このやり方はやはり慣れが必要で、`format!`マクロの方がむしろjs, python, phpなどの文字列補填（string interpolation）の使い方に一致度が高いと感じている。所有権の移動がないので、意図しない問題がなくなる気もする。\n\n```rust\n    let s1 = String::from(\"tic\");\n    let s2 = String::from(\"tac\");\n    let s3 = String::from(\"toe\");\n\n    let s = format!(\"{s1}-{s2}-{s3}\");\n```",
+      "body_updated_at": "2023-01-01"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2022-12-30",
+      "body_markdown": "最後と言いたいところですが、高級言語に慣れすぎると非常にびっくりする仕様：文字列のインデックス問題。\n\n例えばpythonで文字列のどれかの要素をアクセスするときに、`str[0]`で文字のインデックスでその文字を読みすることができる。\n\nただ、Stringは**バイトのコレクション**となっている（後で説明）ため、このやり方ができない。\n\nバイトのコレクションで何が問題になるかというと、キャラクターセット・エンコーディングによって文字の長さ・代表するコードが違ったりするからだ。\n\nrustでは`utf-8`のキャラクターセットを使っているので、文字は基本的に1-4バイトの長さとなる。なので、\n\n```rust\nlet s1 = String::from(\"hoge\");\ns1[0]; // パニックするが例のために、ここはhが出るはず \n\nlet s2 = String::from(\"ほげ\");\ns2[0]; // ここは何が出るか知らんが、utf-8で「ほ」の文字に当たるコードを調べればわかる\n```\n\n要は、１バイト以外にも、2バイトや3-4バイト（例えば日本語の文字）で保存されるキャラクターが多く存在するので、同じ0というインデックスでも、「**どこまでが一個目の文字**」か、rustはわからん。何より、インデックスでアクセスする場合は`O(1)`の時間複雑度なので、このどこまで切れば分からない仕様だと`O(1)`は無理。\n\nなので結局、rustでは文字列の文字をアクセスしようとするときに、python,jsとかのように直接インデックスからアクセスすることができない。やろうとすると`String cannot be indexed by {integer}`のエラーが出る。\n\nこの「バイトのコレクション」というは一体なんなのか。公式にも言及しているように、rustでは、`Stirng`型が`Vec<u8>`のwrapperとなっている。言い換えれば、`String`型は`unsigned 8bit`＝0-255までの数値、のベクター・配列となっている。なので、`str[0]`でアクセスしたのは、**一個目の文字というより、あくまでも「1個目の文字を表す1-4バイトの中の1個目のバイト」という意味**なのだ。",
+      "body_updated_at": "2022-12-30"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2022-12-30",
+      "body_markdown": "ならどうしても「ほげ」から「ほ」を取りたい！！という時はどうすんだよ！\n\n日本語はutf-8で基本3バイトなので、言い換えれば、0から3までのバイトを取り出せば、「ほ」とデコードできるはず。\n\nここでスライスをやってみると：\n\n```rust\n    let s = String::from(\"ほげ\");\n    let answer = &s[0..3];\n    println!(\"{}\", answer) // ほ\n```\n\n行けた！！と言いたいところだが、毎回数えるのがどうかな。。てかこれだと文字列の長さをどう計算するの？\n\n```rust\n// ...\n    println!(\"{}\", s.len()); // 6\n    println!(\"{}\", s.chars().count());  // 2\n```\n\n`len()`はバイト数の長さを返す。`chars().count()`では**`char`タイプの文字数**を返す。ほとんどの場合これでOK（日本語英語メインとか）。ほとんど。。\n\nというのは、`char`タイプの文字数＝文字数が必ずしもtrueではないからだ。\n\n```rust\nuse unicode_segmentation::UnicodeSegmentation;\n// ...\n    let s = String::from(\"é\");\n    println!(\"{}\", s.len()); // 3\n    println!(\"{}\", s.chars().count()); // 2\n    println!(\"{}\", s.graphemes(true).count()) // 1\n```\n\n`graphemes`は書記素のことで、文字の意味を区別することが可能な最小単位となっている。つまり、`e`と`é`は、上の`́`の有無によって全く別の意味になることだ。公式にもあるが、rustにおける文字列というのは、書記素のクラスター（grapheme clusters）としてみられる。我々が通常考えている「文字」や「文字列」との概念との間に、交差する域は大半ではあるが、しない部分も存在する。実際に扱う文字データによって、この辺りの「エッジケース」と打つける可能性が十分ある。\n\n本当に面倒いよな…\n\nただ、文字や文字列とは何か、違う言語やキャラクターセット、コンピューターと人間による解釈の差など、Rustを通して改めて勉強になった気がする。\n\n（この辺りについて[こちら](https://stackoverflow.com/questions/46290655/get-the-string-length-in-characters-in-rust)にも参照）",
+      "body_updated_at": "2022-12-31"
+    }
+  ]
+}

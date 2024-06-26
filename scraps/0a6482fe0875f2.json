@@ -1,0 +1,13 @@
+{
+  "title": "debounce/throttleのメンタルモデル",
+  "closed": false,
+  "archived": false,
+  "created_at": "2023-04-23",
+  "comments": [
+    {
+      "author": "convers39",
+      "created_at": "2023-04-23",
+      "body_markdown": "```js\nfunction debounce(Fn, wait) {\n  let timer\n  return function(...args) {\n    clearTimeout(timer)\n    timer = setTimeout(() => {\n      Fn.apply(this, args)\n    }, wait)\n  }\n}\n\nfunction throttle(Fn, wait) {\n  let shouldBlock = false\n  return function(...args) {\n    if (shouldBlock) return\n    shoudBlock = true\n    setTimeout(() => {\n      shoudBlock = false\n    }, wait)\n    Fn.apply(this, args)\n  }\n}\n```\n\n![](https://storage.googleapis.com/zenn-user-upload/b208451320e7-20230423.png)\n\n- `timer`変数はリターン関数のスコープではなく、`debounce`のスコープに置くことで、**時系列の中で複数回呼び出しても、同じ変数へのアクセスが可能に**（クロージャー）\n- 初回の`clearTimeout`はどうでも良いが、2回目からは1回目の`setTimeout`で定義されたタイマーをクリア\n- 定義された`wait`が切れるまで無限ループ→切れなければクリアされる\n- `throttle`もクロージャーを利用したほぼ同じ考え方で、`shouldBlock`の値を定義された時間で`true/false`を操作し、時系列の中で変更を達成する。\n\n実装上のトラップ：\n- リターン関数はアロー関数書かない→`this`が`undefined`になる\n- 逆に`setTimeout`にわたす関数はアロー関数で書く→`this`がないので親スコープのリターン関数の`this`を継承、これは意図通り\n  - もしくは`let context = this`とかで`context`を渡す\n  - もしくは`bind`で明示的バンドする、ただし読みにくくなるかも\n"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "title": "システムデプロイメントの策略",
+  "closed": false,
+  "archived": false,
+  "created_at": "2023-06-12",
+  "comments": [
+    {
+      "author": "convers39",
+      "created_at": "2023-07-05",
+      "body_markdown": "| Update Strategy | Downtime (Update/Rollback) | Update Speed | Risk on Impact | Infra-Resources | Management Complexity | User Version Control | Combination with Other Strategies |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| Big Bang | Yes/Yes | Fast | High | Low | Low | No | Limited |\n| Rolling | No/Depends | Slow | Low to Medium | Moderate | Moderate | No | Yes |\n| Blue/Green | No/No | Fast | Low | High | High | No | Limited |\n| Canary | Depends/Depends | Slow | Low | High | High | Yes | Often with Rolling |\n| Feature Toggle | No/No | Fast | Low | Moderate | High | Yes | With Any |"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-07-05",
+      "body_markdown": "https://youtu.be/AWVTKBUnoIg"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-07-05",
+      "body_markdown": "## Big Bang\n\n 一回で全部更新する\n\n### Pros\n* 一気に全部適応できる\n* 実装がシンプル\n* 利用するリソースが比較的に少ない\n* これしか選択肢がない場面がある（複雑なDB周りの更新がある場合→あまり想像ついていないが）\n\n### Cons\n* 更新時にdowntime発生\n* rollbackの時もdowntime発生してしまう\n\n## Rolling \n\n一部ずつ更新していくincrementalアプローチ\n\n### Pros\n* downtimeが基本ない\n* 問題がある場合システム全体に波及する前に早期解決に繋がる\n* riskとuser impactをバランスに\n\n### Cons\n* 更新が完了するまで時間がかかる\n* 問題が発見できなかったら結局システム全体に波及\n* どのユーザーがどのバージョンを使うか制御できない\n\n## Blue/Green \n\nliveとidle状態の同じシステムを用意し、LBを通して随時切り替えする\n\n### Pros\n* downtimeがない\n* rollbackもdowntimeなしでいける\n* リスクが最も少ない方法\n\n### Cons\n* どのユーザーがどのバージョンを使うか制御できない\n* インフラ周りresource-intensiveな方法\n* DBデータの同期や3rdパーティサービスなどを扱うと複雑度を増していく\n* cloud serviceの場合、サポートしているとしていないサービスがあるため、制御が複雑になる\n\n## Canary \n\n一部のサーバーまたは一部のユーザーをターゲットにして、更新を実験的にしていくincrementalアプローチ\n\n### Pros\n* どのユーザーがどのバージョンを使うか制御できる（場所、デバイスなどの基準で）\n* 問題がある場合システム全体へ波及がない\n* 通常はrollingと組み合わせてやれる\n\n### Cons\n* 一部のみデプロイとロールバックするインフラ周りの管理コスト（DBスキーマ変更、APIバージョン変更などが関わる場合は特に）\n\n## Feature Toggle \n\nシステム更新のデプロイというよりも、システムの機能を管理するためのテクニック\n\n### Pros\n* ユーザーなどの条件次第で、有効・無効にする機能の制御ができる\n* 上\n\n記のいずれかのデプロイ戦略との組み合わせが可能\n* A/Bテストに適している\n\n### Cons\n* 実装上正しくできないとコードの複雑度を増したり、テストが難しくなったりする\n* 使わなくなったtoggleはtoggle debtになるため掃除がないとメンテが難しくなる\n"
+    }
+  ]
+}

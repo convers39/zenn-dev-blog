@@ -1,0 +1,24 @@
+{
+  "title": "vimができても仕事効率がそんなに上がらないかもしれない説",
+  "closed": false,
+  "archived": false,
+  "created_at": "2023-07-05",
+  "comments": [
+    {
+      "author": "convers39",
+      "created_at": "2023-07-05",
+      "body_markdown": "コードを書く時間と読む時間について、Robert Martin氏が名作Clean Codeで言われているように、[1:10の比例](https://www.goodreads.com/quotes/835238-indeed-the-ratio-of-time-spent-reading-versus-writing-is)になっていると。\n\n> “Indeed, the ratio of time spent reading versus writing is well over 10 to 1. We are constantly reading old code as part of the effort to write new code. ...[Therefore,] making it easy to read makes it easier to write.”\n\n"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-07-05",
+      "body_markdown": "実際のエンジニア仕事は、もちろんコードの読み書きだけではないし、色々とMTGや調査、他のメンバーとのコミュニケーションに使われることが多い。\n\n結局、\n- 何を解決しようとしているか\n- 問題の本質とは何か\n- この要求を満たすためにどんなステップが必要なのか\n- より良い解決方法がないか\n- タスクのスコープはどこまでか\n- マイルストーン、スプリントゴールはどうするか\n- この問題について誰に聞けば良いか\n- このタスクは誰にやってもらった方が良いか\n- ...\n\nといった問題を解決しながら時間が大半使われているのではないか、と最近思いました。\n\n",
+      "body_updated_at": "2023-07-05"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-07-05",
+      "body_markdown": "ならvimは何かというと、\n\n- ツール（当たり前だがテキストエディター）\n- 仕事スタイル\n- コーディングを楽しくさせる調味料\n- エンジニアのロマン\n- 夢のあるところ\n- 時にストレスの源（妙なバグにハマったりしやすい）\n- ...\n\nと思っています。\n\n以前は結構人にvimを推奨したいと思っていましたが、結局「自分はこれができるぜ、カッコ良いだろう」との自己満だけかもしれない。\n\n今はPragmatic programmerとして、そんなのどうでもええわ。仕事の質と効率にさほど影響するものではない（上記の色々な問題を聞く必要がなく、純粋にコーディングをひたすらやる場合を除く）ので、好きなやり方で、ツールで進めりゃ良い。\n"
+    }
+  ]
+}

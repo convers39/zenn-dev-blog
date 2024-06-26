@@ -1,0 +1,23 @@
+{
+  "title": "ハイルマイアーの問答 Heilmeier Catechism",
+  "closed": false,
+  "archived": false,
+  "created_at": "2023-01-15",
+  "comments": [
+    {
+      "author": "convers39",
+      "created_at": "2023-01-15",
+      "body_markdown": "LCDディスプレイ先駆、エンジニアの方が提案している、新しいプロダクトを作る際に自分に聞く一連の質問です。\n\n[こちら](https://en.m.wikipedia.org/wiki/George_H._Heilmeier)からコピペする\n- What are you trying to do? Articulate your objectives using absolutely no jargon.\n- How is it done today, and what are the limits of current practice?\n- What's new in your approach and why do you think it will be successful?\n- Who cares? If you're successful, what difference will it make?\n- What are the risks and the payoffs?\n- How much will it cost?\n- How long will it take?\n- What are the midterm and final \"exams\" to check for success?\n"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-01-15",
+      "body_markdown": "これは新しい技術を学ぶ時にも適応できそう\n\n- この技術を学ぶ目標とは何か?明確に述べよう\n- この技術の現状はどうなんだ?何か限界があるか\n- この技術にどんなクリエイティブなところがあるのか?なぜ成功するのか?プロジェクトに導入すると、誰が関心を持つのか\n- この技術が成功すると（習得すると）、どんな変換をもたらすのか\n- この技術を採用する（学ぶ）コスト、リスクと収益の比例はどうなんだ?どのくらいのリソース（時間と金銭）がかかるのか?どのように効果を測定・評価するのか?"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-01-15",
+      "body_markdown": "既存のプロジェクトの技術スタックを馴染むためには論外かも。あくまでも新しい技術を採用・学習する際の自省ガイドラインとして良いかも。"
+    }
+  ]
+}

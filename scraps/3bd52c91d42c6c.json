@@ -1,0 +1,36 @@
+{
+  "title": "TypeScript Documentaryまとめと感想",
+  "closed": false,
+  "archived": false,
+  "created_at": "2023-10-10",
+  "comments": [
+    {
+      "author": "convers39",
+      "created_at": "2023-10-10",
+      "body_markdown": "https://youtu.be/U6s2pdxebSo?si=EQbMEIDzb26IzMH4\n\nTSをよりファンシーな言い方で説明すると、\n\n> A language brain to reason your (JS) code",
+      "body_updated_at": "2023-10-10"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-10-10",
+      "body_markdown": "タイプシステムはjsにとって革命的\n- 開発者体験の向上\n  - go to def/ref, rename symbol, などcode navigation, auto completion, refactorが機能することで、効率が良くなる\n  - 型が分かるかつ合わないとエラーになる安心感\n- 型システムがあるこそjsの開発がスケールする\n  - 例：vscodeの誕生と緊密に→tsがないとvscodeの開発が無理らしい\n  - jsだとデバッグは苦痛\n- structural typing\n  - 名前からではなく、属性とメソッドでタイプを決める\n- tsの3つの視点と価値\n  - タイプシステム\n  - トランスパイラー\n  - extra info for VM\n- fix vs replace\n  - tsはjsをフィックスしようとしている\n  - 同じ頃にV8を作ったチームはjsの代替品としてDartを開発し始めてる\n  - js is not broken enough, dart didnt fix it enough either\n  - 結局新しい言語を学ぶコストと、既知の言語の新しいフィーチャーを学ぶコストの差もある\n- jsを複雑化しているのではないか？\n  - tsを使って問題を解決したがそもそも使わないと存在しない問題だったりする\n  - ただ、overtime the benefits of type system overcome the efforts of adding types everywhere\n    - 技術の世界では常にtrade-off",
+      "body_updated_at": "2023-10-10"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-10-10",
+      "body_markdown": "TSのオープンソース\n- MS社内の変化\n  - MSではtsの開発までにlicensed softwareの方が全てで、OSSに関してはほぼ無知な状態\n  - OSSにしてどんなbusiness valueが提供できるかの問い\n    - 一般的な答えがあるとしたら、match the business requirements in the most efficient way possible and have it as maintainable as possible\n  - open source is a cancer -> embrace the world be a good citizen\n  - ビジネスモデルも大きく転換している背景もある\n- @types の誕生\n  - DefinitelyTyped, Typingsなどの、タイプ定義だけ集約するライブラリーがあったが、管理がどんどん不可能になる\n  - 最終的にTSがタイプ定義を@typesへ集約\n- embrace the world\n  - AtScriptとのtsと似てる言語がgoogle angularチームに開発されていた\n    - ts側がasとコンタクトして、同じニーズを解決する意味で最終的に両者はマージ\n    - decorator!!\n    - 最終的にgoogleにもtsが浸透\n  - 現在の主流のFE側FWと緊密に連携して、各FWにもtsがfirst class supportとなっている\n    - 相互的な効果があって、FW側もtsのサポートを重視する\n    - BE側も、deno, bunとか\n  - facebookのFlowはどちらかというと社内のニーズを解決するために作られたもので、コミュニティーのために作られたTSとは目的がちがう",
+      "body_updated_at": "2023-10-10"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-10-10",
+      "body_markdown": "JSとの関係性をsuperset以上\n- TSチームはJSの定義を決めるTC39に直接参加\n- 言語というよりjsを拡張するツールのセットでもある\n  - vscodeとか、IDEでjsのコードのタイプなどが分かるのもtsのパーサーの力\n  - js docも\n- 将来的にJSへdeforkする可能性？\n  - tsがなくなるもしくは存在を感じなくなる日が来るかも"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-10-10",
+      "body_markdown": "全体的に思ったのは、一つの技術・プロダクトの成功にはいろんな要素が絡んでいるが、TSのケースを思うと\n- 開放的かどうか\n  - =OSSだけではない（Flowを参考）\n  - コミュニティードリブンかどうか、他の技術と積極的に連携するかどうか\n- ニーズ・ペインを解決できるかどうか\n  - 開発者視点で言うと開発者体験\n  - 言語視点で言うとタイプシステム（とトランスパイラーなど各種ツール）\n    - さらにいうと将来の仕様変更、言語の行き先にある程度のガイドライン\n  - プロダクト視点で言うとコード安定性、メンテナンスコスト"
+    }
+  ]
+}

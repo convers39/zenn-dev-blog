@@ -1,0 +1,18 @@
+{
+  "title": "Solid.jsのチュートリアルをやってみる",
+  "closed": false,
+  "archived": false,
+  "created_at": "2024-05-25",
+  "comments": [
+    {
+      "author": "convers39",
+      "created_at": "2024-05-25",
+      "body_markdown": "True reactivityと称されて、前々からやろうと思いましたがなかなか始まらず。。せっかく時間取れたのでやってみました。\n\nとりあえず公式のチュートリアルだけやろうと思います。\n\nhttps://www.solidjs.com/tutorial"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2024-05-25",
+      "body_markdown": "React経験があればJSX表記とか、エフェクトとか割と慣れやすいかも。\n\nただ本質的に違うのは、reactとvueのようなvirtual DOMを使っていなく、レンダリングは全てリアルDOMに対して行われるらしい。VitualDOMのレイヤーがないおかげでパフォーマンスもフレームワークの中でトップレベルみたい。\n\nまた、reactivityの意味で言えば、solid.jsは[fine-grainedレベル](https://docs.solidjs.com/advanced-concepts/fine-grained-reactivity#making-a-system-reactive)の制御が可能で、ステート変更が行われた要素だけレンダリングする。reactのようにステートが変わるとコンポーネント全体が再度レンダリングするようなことがないし、useRefとかのハックも要らなくなる。\n"
+    }
+  ]
+}

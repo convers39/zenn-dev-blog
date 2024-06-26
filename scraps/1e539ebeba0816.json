@@ -1,0 +1,23 @@
+{
+  "title": "So You Think You Know Gitからのtakeaway",
+  "closed": false,
+  "archived": false,
+  "created_at": "2024-02-20",
+  "comments": [
+    {
+      "author": "convers39",
+      "created_at": "2024-02-20",
+      "body_markdown": "github co-founder, pro gitの著者 Scott Chaconさんのトークです\n\nhttps://youtu.be/aolI_Rz0ZqY?si=hX0vw1fq7derJFJG"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2024-02-20",
+      "body_markdown": "- git command 大まかに82 porcelain + 63 plumbingコマンドがある、このトークは主に前者の話\n  - 44 main -> add, commit, push …\n  - 11 manipulators -> config, reflog, replace …\n  - 17 interrogators -> blame, fsck, rerere\n  - 10 interactors -> send-email, p4, svn\n- config系\n  - `alias`を設定する `git config --global alias.<str> '<cmd>'`\n    - `!`をつけるとことでbashスクリプトもaliasにできるー＞知らなかった\n  - conditional configs with `[includeIf \"gitdir:~/projects/work/\"]`\n    - 仕事とプライベートの環境を分けるとかによく使う\n  - `rerere.enabled true`\n    - reuse recorded solution -> 例えばリベースするときに同じ競合を何回も解消しないといけないときに、これは初回のものをメモしてくれるので2回目以降は自動で解消してくれる -> 神機能知らなかった -> 繰り返しがあるときにもっと良いやり方がきっとあるとの真理\n- odies but goodies\n  - `git blame`\n    - `-L 10,20:<file>`  -> little -> ファイルの一部のblameを出す\n    - `-L :<class/function/..._name>:<file>`  -> gitにその名前の部分を探して出してもらう\n    - `-w` -> whitespaceを無視\n    - `-C` -> コードの移動を検知する -> ここの面白いのは、同じフラグを2回、3回つけることで効果がまた違う\n  - `git log`\n    - `-S <str|regexp> -p` ->ログから検索して出す\n  - `git reflog` 今までやったことは記録できるのでタイムトラベル -> これはよく使う、非常に有用\n  - `git diff`\n    - `--word-diff` ->名前通り、デフォルトはlinebase\n- new stuff\n  - `git branch --column` -> ブランチを画面サイズに合わせて複数列に表示させる（lsの見た目）、地味にみやすくなる\n  - `git push --force-with-lease` -> force pushする際にもしリモートのHEADが、ローカルから見て想定するHEADと違うときにリジェクトするようにする（例えば別の人がすでにコミットを入れた場合） -> 非常に有用、デフォルトにしたい -> デフォルトじゃない理由は、gitは常にbackward compatibleだからだとQAで答えている\n  - signing commits with ssh -> sshキーを使ってコミットにシグネチャーをつける、github上に該当public keyをつけておくと、verifiedが表示される\n  - `git maintenance start` -> everyone do this today! -> cron jobを追加して、さまざまな操作を早くする\n    - 例：prefetchを1h毎にに実行するのでfetchは早くなる\n    - 他は下のbig repo stuff参照\n- big repo stuff -> 50万以上のファイルがあるレポ、windows OSが300GB以上、350万以上のファイル -> この辺の改善は上記の`git maintenance`に含まれている\n  - prefetching -> git for-each-ref | grep prefeで確認できる\n  - commit-graph -> logはこれに依存する\n  - filesystem monitor -> git statusが早くなる\n  - git clone --filter=blob:none -> blobファイルをダウンロードしないようにする、オンデマンドに\n  - git clone --filter=tree:0 -> 普段開発ではなく、CIの時間短縮に活用できる\n- monorepo stuff\n  - sparse-checkout -> ものレポの一部だけをクローンする\n- github stuff\n  - allow merge types -> merge commits派 vs rebase派、いずれもサポート可能\n    - 自分のチームではどちらかというとmerge commit派、feature -> mainのときにsquash merge commit、main -> featureもmerge commit\n  - auto merge -> CI成功後自動マージする\n    - 自分のチームではよく使われる機能\n- GitButler\n  - 現在Scott Chaconさんが所属のチーム、GitのGUIプロダクト\n  - 同時に複数のブランチで開発を進められるのが特徴的（switch/checkout不要）\n  - Scottさん本人はcli派らしいが、interactive addingを使う際にGUI推し -> より効率的なツールを選ぶ原則\n"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2024-04-02",
+      "body_markdown": "https://youtu.be/Md44rcw13k4?si=qjvRbDftYCy2bR-4\n\npart 2"
+    }
+  ]
+}

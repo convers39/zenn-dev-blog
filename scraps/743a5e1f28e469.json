@@ -1,0 +1,23 @@
+{
+  "title": "Rust勉強手記ーエラーハンドリング",
+  "closed": false,
+  "archived": false,
+  "created_at": "2022-12-31",
+  "comments": [
+    {
+      "author": "convers39",
+      "created_at": "2022-12-31",
+      "body_markdown": "rustのもう一つ特別なところ。エラーハンドリングの設計は他の言語と結構違う面がある。\n\n一般的に使われているtry/catch構造でexceptionをキャッチするロジックは、rustには見えない。\n\nrustでは、回復可能な（recoverable）と回復不可能（unrecoverable）なエラーを区別している。回復不可能な場合は、`panic!`マクロが実行され、いわばパニックが発生し、プログラムの実行が中止となる。逆に、回復可能な場合は、`Result<T, E>`をリターンする形で、エラーを`Result`の`Enum`型に箱入りしている。\n\n```rust\nenum Result<T, E> {\n    Ok(T),\n    Err(E),\n}\n```\n\nすると、この実行結果によって処理を分けることができるようになる。ある意味で強制的なので、よりrobustなコードになるでしょう。\n\n`Enum`型なので、`match`と併用する形が思い浮かぶかもしれない。より洗練な書き方、`unwrap`や`expect`、クロージャー、`?`演算子などもある。\n\n```rust\n    let greeting_file_result = File::open(\"hello.txt\");\n\n    let greeting_file = match greeting_file_result {\n        Ok(file) => file,\n        Err(error) => match error.kind() {\n            ErrorKind::NotFound => match File::create(\"hello.txt\") {\n                Ok(fc) => fc,\n                Err(e) => panic!(\"Problem creating the file: {:?}\", e),\n            },\n            other_error => {\n                panic!(\"Problem opening the file: {:?}\", other_error);\n            }\n        },\n    };\n\n    // よりシンプルに\n    let greeting_file = File::open(\"hello.txt\").unwrap();\n```"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2022-12-31",
+      "body_markdown": "`?`を使うときによくエラーのpropagationと関連する。実際の開発にもよくある場面だと思うが、一々全ての関数に`try/catch`を実装するよりも、ミドルウェアとかの形でどこかで統一キャッチしたりする。\n\nrustで実践するときに注意したいのは、caller関数のリターンタイプと、`?`演算のリターンタイプの一致性だと。例えばmain関数のなかで全てのエラーを「キャッチ」しようとすると、\n\n```rust\nuse std::fs::File;\n\nfn main() {\n    let greeting_file = File::open(\"hello.txt\")?;\n}\n```\n\n`this function should return Result or Option to accept ?`とのエラーメッセージが出てしまう。このときに、`File::open`関数のリターン値は`Result`型なので、`main`関数も合わせる必要がある。\n\n```rust\nuse std::error::Error;\nuse std::fs::File;\n\nfn main() -> Result<(), Box<dyn Error>> {\n    let greeting_file = File::open(\"hello.txt\")?;\n\n    Ok(())\n}\n```\n\nこの辺りまだ不慣れがあってもう少し時間がかかりそう。"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2022-12-31",
+      "body_markdown": "それでいつ`panic!`を使うか、いつ`Result<T, E>`を使うか、との問題が出てくる。\n\nこれはtsで言えば、`try/catch`でcatchブロックで`unknown`型エラーに対してエラーの種類を一個ずつ確認して、それぞれの処理を行う場面を考えるとわかりやすいかもしれない。一般的に、この**失敗・エラーは想定中の可能性の一つ**、`Result`で考えた方が良いらしい。\n\nもしくはコンパイラーより多くの情報を持つ場合、例えばreactのDOM操作で`!`をつけて要素が必ず存在するよという時はコンパイラーより開発者が多くの情報を持っている→大丈夫だとと確信を持っている時、`Result`も使った方が良いみたい。\n\nただし、コードが*bad state* にある時は、パニックを採用する。この悪い状態というのは、公式で`when some assumption, guarantee, contract, or invariant has been broken`と説明している。[こちら](https://stackoverflow.com/questions/77127/when-to-throw-an-exception?rq=1)のポストにもあるように、`a fundamental assumption of the current code block is found to be false`の状態。言い換えれば、コードが予定通り、正しく実行できない状態とも解釈できる。\n\nこの辺りは以前[設計原則](https://zenn.dev/convers39/articles/83dd5898d4d798)のところと少し関係あるが、例えば契約的設計の前置き条件・後置き条件が破れたときは該当するでしょう。これらの条件は「コードが正しく実行する」ために設置されていると想定できるので、*bad state*の基準にもなりそうかなと。\n\nまた、意図的にパニックしたいケースもあったりする。例えばテストの時、prototyping（ここは若干意味理解していないが、[設計パターン](https://refactoring.guru/design-patterns/prototype)のことかな）、ただただサンプルコードを書いている時など。"
+    }
+  ]
+}

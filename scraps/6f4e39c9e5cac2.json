@@ -1,0 +1,31 @@
+{
+  "title": "Reactでシンプルなスターウィジェット",
+  "closed": false,
+  "archived": false,
+  "created_at": "2023-04-26",
+  "comments": [
+    {
+      "author": "convers39",
+      "created_at": "2023-04-26",
+      "body_markdown": "オリジナルは[こちら](https://www.greatfrontend.com/questions/user-interface/star-rating)。具体的な要求は以下となりる。\n\nCreate a star rating widget that allows users to select a rating value.\n\n## Requirements\n\n- The widget accepts two parameters: the maximum number of stars and the number of currently filled stars.\n- When a star is clicked, it is filled along with all the stars to its left.\n- When the user hovers over the stars, all the stars under the cursor and its left are filled.\n  - The stars which need to be filled during hover take priority over existing filled state.\n  - If the cursor leaves the widget and no new selection is made, the appropriate stars revert to the filled state before the hovering.\n- Make the star rating widget reusable such that multiple instances can be rendered within the same page.\n\nThe star icons, both empty and filled, are provided to you as SVGs.\n\n",
+      "body_updated_at": "2023-04-26"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-04-26",
+      "body_markdown": "![](https://storage.googleapis.com/zenn-user-upload/8b0915f2bec8-20230426.gif)\n\n```js\nimport {useState} from 'react'\nimport './styles.css';\n\nexport default function App() {\n  return (\n    <div>\n      <StarRating />\n      <StarRating />\n    </div>\n  );\n}\n\nfunction StarRating({ maxCount = 5, filledCount = 0 }) {\n  const [hoverIdx, setHoverIdx] = useState(-1)\n  const [clickIdx, setClickIdx] = useState(filledCount - 1)\n\n  return (\n    <div>\n      {[...Array(maxCount).keys()].map((idx) => {\n        const shouldBeFilled = idx <= hoverIdx || (hoverIdx === -1 && idx <= clickIdx)\n        return (\n          <Star \n            onClick={() => setClickIdx(idx)} \n            onMouseEnter={() => setHoverIdx(idx)}\n            onMouseLeave={() => setHoverIdx(-1)}\n            isFilled={shouldBeFilled}\n          />\n        )\n      })}\n    </div>\n  );\n}\n\nfunction Star({onMouseEnter, onMouseLeave, onClick, isFilled}) {\n  const iconClass = `star-icon ${isFilled && 'star-icon-filled'}`.trim()\n  return (\n    <span \n      onClick={onClick} \n      onMouseEnter={onMouseEnter} \n      onMouseLeave={onMouseLeave} \n    >\n      <svg\n        xmlns=\"http://www.w3.org/2000/svg\"\n        className={iconClass}\n        fill=\"none\"\n        viewBox=\"0 0 24 24\"\n        stroke=\"currentColor\"\n        strokeWidth=\"2\">\n        <path\n          strokeLinecap=\"round\"\n          strokeLinejoin=\"round\"\n          d=\"M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z\"\n        />\n      </svg>\n    </span>\n  )\n}\n```\n\n```css\nbody {\n  font-family: sans-serif;\n}\n\n.star-icon {\n  --icon-size: 32px;\n  height: var(--icon-size);\n  width: var(--icon-size);\n}\n\n.star-icon-filled {\n  fill: yellow;\n}\n```",
+      "body_updated_at": "2023-04-27"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-04-26",
+      "body_markdown": "## Notes\nThe Star Rating widget can be improved in the following ways:\n\n- Allow the value to be part of a form submit event data by embedding an <input>.\n- Add keyboard support for better a11y.\n- Add RTL (right-to-left) support.\n\n## Test Cases\n\n- Click on each star and move the cursor away, see that the highlighted state is correct.\n- Hover over each star, see that every star under the cursor and to its left are highlighted.\n  - Remove cursor over widget, see that the highlighted state is back to before the hovering.\n- Render multiple components, ensure that each can maintain its own state and interacting with a widget does not affect other onscreen components.",
+      "body_updated_at": "2023-04-26"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-04-26",
+      "body_markdown": "a11y(accessibility)のことはあまり考慮したことなかった気がするな。。キーボードにも使えるようにするにはtabでフォーカス、アローキーとエンターキーの挙動も有効にする必要があるってことか。。"
+    }
+  ]
+}

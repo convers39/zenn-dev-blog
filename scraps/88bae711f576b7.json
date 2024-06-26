@@ -1,0 +1,14 @@
+{
+  "title": "OOP is about messaging",
+  "closed": false,
+  "archived": false,
+  "created_at": "2023-02-02",
+  "comments": [
+    {
+      "author": "convers39",
+      "created_at": "2023-02-02",
+      "body_markdown": "別のどこかの本で読んだことのある言葉ですが、OOを発案したAlan Kay氏の観点です。OOPはオブジェクトの間の通信が真髄ですよと。\n\n[こちら](https://douglasbellonrocha.medium.com/functional-object-oriented-programming-with-message-passing-71979ca9d097)の記事も良かったです。\n\n> the essence of OOP is the concept of message passing, and that modern programming languages focus more on the object notation itself than on the concept of message passing",
+      "body_updated_at": "2023-02-02"
+    }
+  ]
+}

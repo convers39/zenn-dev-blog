@@ -1,0 +1,39 @@
+{
+  "title": "ハイラムの法則 Hyrum's Law についてのつぶやき",
+  "closed": false,
+  "archived": false,
+  "created_at": "2023-09-06",
+  "comments": [
+    {
+      "author": "convers39",
+      "created_at": "2023-09-06",
+      "body_markdown": "> With a sufficient number of users of an API, it does not matter what you promise in the contract: all observable behaviors of your system will be depended on by somebody.\n\n[引用先](https://www.hyrumslaw.com/)\n\n一定のユーザーの持つAPIであれば、契約をどう保証しようと、システム全体の挙動が誰かのユーザーに依存されてしまうこと。\n"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-09-06",
+      "body_markdown": "一個例を挙げると（Software Engineering at Google第1章より）、仮にハッシュテーブルを利用するAPIがあるとしよう。\n\nhash tableの実装上、要素の順番は守られないはずだが、現在一部のプログラミング言語では、その順番が一定になっている。例えば、pythonでは確か3.6, 3.7あたりから、順番が保持されるように（挿入の順に）なった（[参考](https://softwaremaniacs.org/blog/2020/02/05/dicts-ordered/en/)）。\n\nこれについて非常に記憶が鮮明で、かつてデータ構造勉強していた頃pythonをメインに使っていたので、pythonのdictがhash tableだとわかった時点で、この順番について試していた。しかし実際に、当時3.7で使っていて、何回プリントしても全く順番が変わらなかった、と矛盾しているのではないかと困惑していた。ES6以前のJSも結構似ている経験があった。\n\nなぜ順番をキープできるようにしたかはともかく、このようなケースで、ハッシュテーブルというデータ構造の**契約**として、順番は守らないよ、のはずだ。ただ、実際に言語によって、順番が守るようにはなっている。これはデータ構造レベルで言うと契約で含まれていない部分だが、この特性に依存するコードを書くことが想定できる。\n\nここの問題とは、仮にAPIの言語を別のものに、例えばJavaに書き換えたら、リターンする要素配列の順番が一定しなくなり、この順番を依存するユーザーのプログラムが壊れる可能性がある。\n\nただ、一方でさらに問題となるのは、仮に最初からJavaで書いていて、ランダム性があるとしても、このランダム性を利用して、あまり効率の良くないrandom generatorを作る可能性が存在する。それで仮にPythonに移行したら、ランダム性がなくなり、この*保証されていない*ユースケースが破綻する。"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-09-06",
+      "body_markdown": "何が問題になっているか。\n\nコーディングにもよく、implementation orientedよりinterface orientedがオブジェクトの間の結合度を下げられるとか言われている。それと共通している気がする。\n\nAPIの設計者が出しているのはシステムの抽象的な「契約」だが、利用者がその具体的な実装に依存してしまうと、API側の「実装」に関わる些細な変更をすることで、利用者側に影響を及ぼす可能性がある。例えばエラーはステータスコードで判断してくださいと言いつつ、とある利用者のシステムではエラーメッセージで処理を行なっている。するとメッセージを変えたら利用者のシステムが壊れてしまうかもしれない。\n\n> the implementation has become the interface, and any changes to it will violate consumer expectations.\n\nただこれは設計側でコントロールできるものではなくなるし、利用者側が意識しないうちに起こる可能性も高いらしい。\n\n> So be aware of how the implicit interface constrains your system design and evolution\n\nこの暗黙的なインターフェース（＝利用者が期待・利用している抽象的な「契約」に含まれない部分？）をどのように気付けるか、経験値に頼るしかないのか、もう少し「解決策」的なところがないか、と思っていた。\n\n",
+      "body_updated_at": "2023-09-06"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-09-06",
+      "body_markdown": "> developers often rely on what they get, and not necessarily what they’re promised\n\n[このブログ](https://nordicapis.com/what-does-hyrums-law-mean-for-api-design/)でいくつかの対抗策を挙げています。\n- Documentation\n- Bug Compatibility\n- Chaos Mocks\n\n"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-09-06",
+      "body_markdown": "Documentationについて、これは暗黙的になりそうな箇所、例えばエラーメッセージ、配列の順番、大文字小文字、文字列の長さなど、保証しない箇所をcausionとかでドキュメントに明記するのが良いかもしれない。\n\nそれにしてもやはり、開発者が意図しないサプライズな使い方が生まれるので、モニターリングをしっかりとり、ユーザーの行為を理解した上で都度必要に応じてドキュメントをメンテしていく必要があるかと。\n\nBug Compatibilityについて、あえて変更前の仕様と同じように維持するような言い方にも聞こえる。ただ別の観点から、例えばデプロイ戦略としても聞かれるfeature toggleを運用することで、ブレークチェンジをする前に後戻りの可能性を残すのが良い実践だと考えられる。もちろん、APIのバージョンニングもこの類になるし、バージョン変更をユーザーに通知したり、「契約」について何が変わったかを明記するのが不可欠でしょう。\n\nChaos Mocksについて、カオスプログラミングよりのニュアンスかと思った（[記事](https://nordicapis.com/chaos-engineering-for-apis-review-of-gremlin-tool/)）。GPTたちによりランダム性のあるテストケースを提案してくれると良いかなと。"
+    },
+    {
+      "author": "convers39",
+      "created_at": "2023-09-06",
+      "body_markdown": "根本的に言うと、ハイラムの法則で指摘されている予想外の依存性が問題になる前提条件として\n- 予想外の使い方が生まれるユーザー母集団が存在\n- アプリケーションがそのライフスパンの中でアップデートしていく\n\nがあると。\n\n前者はスケールの意味で、後者は時間の意味で、いずれもソフトウェアにとって重要な側面だと。\n\n逆に言えば、使う人少ないし、APIバージョン変えることもないならこの問題自体が存在しない。\n\nそれで、当たり前の結論にはなるが、他にユーザーが利用しているシステムに変更しようと思う時に、何かを捨てることのコストを話し合ってから、この依存性を意識しつつ進めた方が良いでしょう。\n"
+    }
+  ]
+}
