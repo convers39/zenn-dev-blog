@@ -20,7 +20,7 @@ published: true
 
 SPAでユーザー影響ないリリース、いわばゼロダウンタイムのリリース（厳密には100%一致するわけではないが）するには、思ったより問題が厄介でした。
 
-何かというと、こちらの[ スレッド ](https://github.com/vitejs/vite/issues/11804)にもあったように 、ユーザーが利用中にリリースしてしまうと、下記のエラーになってページが表示できなくなる可能性があります。
+何かというと、こちらの[スレッド](https://github.com/vitejs/vite/issues/11804)にもあったように 、ユーザーが利用中にリリースしてしまうと、下記のエラーになってページが表示できなくなる可能性があります。
 
 ```
 TypeError: Failed to fetch dynamically imported module
@@ -49,7 +49,7 @@ TypeError: Failed to fetch dynamically imported module
 
 ## 原因
 
-[こちら]のスレッドではすでに述べられていますが、このエラー発生の流れとして、
+[こちら](https://github.com/vitejs/vite/issues/11804)のスレッドではすでに述べられていますが、このエラー発生の流れとして、
 
 - verAのアプリをデプロイした
 - ユーザーがverAを利用中
@@ -268,9 +268,8 @@ function AppUpdateProvider({ children }) {
 - 新しいバージョンを検知する、`updatefound`イベント自体は頻繁に起こらない
   - 定期更新検知は、24時間置きになる -> 長すぎて解決にならない
   - もしくは画面ロード・リロード時に更新チェックが行われる -> 鳥が先か卵が先かの問題になる
-- 自動更新検知を諦め、手動で更新検知する（[update](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerRegistration/update)でポーリング）と、一定の頻度を超えると`self-update limit exceeded`のエラーが起こる（下記の画像）
+- 自動更新検知を諦め、手動で更新検知する（[update](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerRegistration/update)でポーリング）と、一定の頻度を超えると`Service workder self-update limit exceeded`のエラーが起こる
 
-![](https://storage.googleapis.com/zenn-user-upload/ce17ab4a5433-20240630.png)
 
 また、もう一つ潜在的な複雑度を上げる問題として、サービスワーカーにはキャッシュができるが、ブラウザーのHTTPキャッシュとは別系統かつブラウザーのHTTPキャッシュはコードで制御できないため、うまくキャッシングするために、ブラウザーのHTTPキャッシュを無効にして、**全部サービスワーカー側でキャッシュ管理する**ことになってしまいます。
 
@@ -401,9 +400,11 @@ function AppVersionWrapper({ children, history }) {
 
 上記のトライでは、アプリ更新のバージョンポーリングと更新検知解決になっていますが、まだ一つ大きな問題が残っています。つまり、**画面リロードしても、エラーが消えない可能性がある**ところです。
 
-これは原因分析のところで触れましたが、ブラウザーキャッシュによって問題のあるファイルをキャッシュしてしまい、TTLが切れるまでエラーが消えないのです。`Failed to fetch dynamically imported module`のエラートレースを見ると、`MIME`タイプのエラーが起きているのです。トライ2のルート遷移監視は、厳密に言えば、`beforeRouteChanged`ではなく、`afterRouteChanged`になるので、存在しないファイルのリクエストが先に飛ばされると、この問題に繋がります。
+これは原因分析のところで触れましたが、ブラウザーキャッシュによって問題のあるファイルをキャッシュしてしまい、TTLが切れるまでエラーが消えないのです。`Failed to fetch dynamically imported module`のエラートレースを見ると、MIME`タイプのエラーが起きているのです。トライ2のルート遷移監視は、厳密に言えば、`beforeRouteChanged`ではなく、`afterRouteChanged`になるので、存在しないファイルのリクエストが先に飛ばされると、この問題に繋がります。
 
-![](https://storage.googleapis.com/zenn-user-upload/3457e1feb332-20240630.png)
+```
+Failed to load module script: Expected a JavaScript module script but the server responded with a MIME type of "text/html". Stict MIME type checking is enforced for module scripts per HTML spec.
+```
 
 
 そのため、ここの考えとしては、
