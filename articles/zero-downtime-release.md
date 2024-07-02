@@ -3,7 +3,7 @@ title: "SPAのダウンタイムなしリリース"
 emoji: "💬"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["react","SPA","devops"]
-published: true
+published: false
 ---
 
 
