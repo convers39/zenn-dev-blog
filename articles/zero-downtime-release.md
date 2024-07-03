@@ -3,7 +3,7 @@ title: "SPAのダウンタイムなしリリース"
 emoji: "💬"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["react","SPA","devops"]
-published: false
+published: true
 ---
 
 
@@ -20,11 +20,9 @@ published: false
 
 SPAでユーザー影響ないリリース、いわばゼロダウンタイムのリリース（厳密には100%一致するわけではないが）するには、思ったより問題が厄介でした。
 
-何かというと、こちらの[スレッド](https://github.com/vitejs/vite/issues/11804)にもあったように 、ユーザーが利用中にリリースしてしまうと、下記のエラーになってページが表示できなくなる可能性があります。
+何かというと、こちらの[スレッド](https://github.com/vitejs/vite/issues/11804)にもあったように 、ユーザーが利用中にリリースしてしまうと、`Failed to fetch dynamically imported module`とのエラーになってページが表示できなくなる可能性があります。
 
-```
-TypeError: Failed to fetch dynamically imported module
-```
+![](https://storage.googleapis.com/zenn-user-upload/7e01d6e90215-20240703.png)
 
 
 ### 環境
@@ -76,7 +74,7 @@ TypeError: Failed to fetch dynamically imported module
 
 ## 解決トライ１ーService Worker
 
-これは真っ先にきました。よく他のアプリで見られたりしますが、「アップデートがあります。クリックして更新してください」的なトーストメッセージが右下に出てきて、それでクリックしたら画面がリロードして新しいバージョンになります（[ 参考記事 ](https://medium.com/progressive-web-apps/pwa-create-a-new-update-available-notification-using-service-workers-18be9168d717)）。それで早速調査と実験を始めました。結論から言うと、解決には至らなかったが、良き経験と学びになりました。
+これは真っ先にきました。よく他のアプリで見られたりしますが、「アップデートがあります。クリックして更新してください」的なトーストメッセージが右下に出てきて、それでクリックしたら画面がリロードして新しいバージョンになります（[ 参考記事 ](https://medium.com/progressive-web-apps/pwa-create-a-new-update-available-notification-using-service-workers-18be9168d717)）。結論から言うと、解決には至らなかったが、良き経験と学びになりました。
 
 ### 背景知識
 
@@ -84,7 +82,7 @@ TypeError: Failed to fetch dynamically imported module
 
 - client（ブラウザー）とserver側に介在する代理/proxy
   - clientからのリクエストをインターセプトする
-  - clientのmain threadへ通知をプッシュすることが可能 -> ここ重要
+  - clientの**main threadへ通知をプッシュすることが可能**
   - serverへリクエストを送る
   - オフライン時のキャッシング
 - ワーカーのコンテキストで実行されているため、DOMへのアクセスはない
@@ -108,12 +106,6 @@ SWでどう言うふうにこの問題を解決できるかと言うと、主に
 
 更新の通知を出すかどうかはUIUXの領域で議論する余地はまだありますが、ユーザーに動きを案内するより、完全に裏側で黙々アップデートする方法も存在します（[参考記事](https://dev.to/atonchev/flawless-and-silent-upgrade-of-the-service-worker-2o95)）。いずれにしても、サービスワーカー経由で新しいバージョンの検知が達成できれば、後は簡単になります。
 
-
-### ブラウザーバージョンと対応状況
-
-API自体はそれほどに新しいわけではないが、念の為バージョンをメモしておいた方が良い（2024/06/30時点）
-
-![](https://storage.googleapis.com/zenn-user-upload/970336acf905-20240630.png)
 
 ### ServiceWorkerをReactへ導入
 
@@ -270,6 +262,7 @@ function AppUpdateProvider({ children }) {
   - もしくは画面ロード・リロード時に更新チェックが行われる -> 鳥が先か卵が先かの問題になる
 - 自動更新検知を諦め、手動で更新検知する（[update](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerRegistration/update)でポーリング）と、一定の頻度を超えると`Service workder self-update limit exceeded`のエラーが起こる
 
+![](https://storage.googleapis.com/zenn-user-upload/48ed33cb51e2-20240703.png)
 
 また、もう一つ潜在的な複雑度を上げる問題として、サービスワーカーにはキャッシュができるが、ブラウザーのHTTPキャッシュとは別系統かつブラウザーのHTTPキャッシュはコードで制御できないため、うまくキャッシングするために、ブラウザーのHTTPキャッシュを無効にして、**全部サービスワーカー側でキャッシュ管理する**ことになってしまいます。
 
@@ -400,18 +393,22 @@ function AppVersionWrapper({ children, history }) {
 
 上記のトライでは、アプリ更新のバージョンポーリングと更新検知解決になっていますが、まだ一つ大きな問題が残っています。つまり、**画面リロードしても、エラーが消えない可能性がある**ところです。
 
-これは原因分析のところで触れましたが、ブラウザーキャッシュによって問題のあるファイルをキャッシュしてしまい、TTLが切れるまでエラーが消えないのです。`Failed to fetch dynamically imported module`のエラートレースを見ると、MIME`タイプのエラーが起きているのです。トライ2のルート遷移監視は、厳密に言えば、`beforeRouteChanged`ではなく、`afterRouteChanged`になるので、存在しないファイルのリクエストが先に飛ばされると、この問題に繋がります。
+これは原因分析のところで触れましたが、ブラウザーキャッシュによって、意図しないファイルをキャッシュしてしまい、TTLが切れるまでエラーが消えないのです。`Failed to fetch dynamically imported module`のエラートレースを見ると、JSが欲しいのに、htmlが来ていて`MIME`タイプのエラーが起きているのです。トライ2のルート遷移監視は、厳密に言えば、`beforeRouteChanged`ではなく、`afterRouteChanged`になるので、存在しないファイルのリクエストが先に飛ばされると、この問題に繋がります。
 
 ```
-Failed to load module script: Expected a JavaScript module script but the server responded with a MIME type of "text/html". Stict MIME type checking is enforced for module scripts per HTML spec.
+Failed to load module script: Expected a JavaScript module script but the server responded with a MIME type of "text/html".
+Strict MIME type checking is enforced for module scripts per HTML spec.
 ```
+
+![](https://storage.googleapis.com/zenn-user-upload/7e01d6e90215-20240703.png)
+
 
 
 そのため、ここの考えとしては、
 
 - **キャッシュしたいファイルと、キャッシュしたくないファイルを整理する**
-- なんでも`index.html`でフォールバック・リダイレクトするのではなく、**`index.html`で返って良いパターンと、そうしたくないパターンを整理する**
- - **`index.html`にしたくないパターンの場合の代案を決める**
+- なんでも`index.html`でフォールバックするのではなく、**`index.html`で返って良いパターンと、そうしたくないパターンを整理する**
+  - **`index.html`にしたくないパターンの場合の代案を決める**
 
 アプリケーションはfirebase hostingにホストされているため、以下はfirebase hosting用の設定で例にします。
 
@@ -477,6 +474,7 @@ Failed to load module script: Expected a JavaScript module script but the server
   }
 }
 ```
+:::
 
 ここのポイントとして、
 - アプリ側存在するURLのパターン＝画面・ページのあるパターンだけをフォールバック対象とする
@@ -492,13 +490,11 @@ Failed to load module script: Expected a JavaScript module script but the server
 
 さて、フォールバックしたくない場合は整理できたところで、結局404はどうするの、との問題が残ります。
 
-ここでまずは、存在しないURLにアクセスする時の404について対策をまとめます。
+存在しないURLにアクセスする時、他のホスティングサービスも共通すると思いますが、もし`404.html`のファイルが提供されていなかったら、デフォルトではfirebaseの404画面が見えてしまいます。
 
-他のホスティングサービスも共通すると思いますが、404の場合は、もし`404.html`のファイルが提供されていなかったら、デフォルトではfirebaseの404画面が見えてしまいます。
+![](https://storage.googleapis.com/zenn-user-upload/5d8134166ba8-20240703.png)
 
-rewritesで、`404.html` -> `index.html`との発想も一応ありました。つまり、404のページをあえて設けず、ホームページを代わりにする作戦です。ただ、ルーターにとって、404エラーになるURLが、どのパターンにもマッチしないので、レンダリングするコンポーネントもなく、画面が真っ白のままになってしまいます。
-
-結局一番素朴な方法にして、404.htmlファイルを一つ作りました。
+rewritesで、`404.html` -> `index.html`との発想も一応ありました。つまり、404のページをあえて設けず、ホームページを代わりにする作戦です。ただ、ルーターにとって、404エラーになるURLが、どのパターンにもマッチしないので、レンダリングするコンポーネントもなく、画面が真っ白のままになってしまいます。 それで結局、一番素朴な方法にして、404.htmlファイルを一つ作りました。
 
 なお、このファイルを正しくビルドするために、`vite`の設定も少し変更が必要です。
 
@@ -528,7 +524,7 @@ export default defineConfig(({ mode }) => {
 
 ### 404の場合ー静的ファイル
 
-上記で存在しない画面の404フォールバックが解決できましたが、静的ファイルのリソースを取得する際にの404エラーについて、エラー捕獲用のコンポーネントを用意します。
+上記で存在しない画面の404フォールバックが解決できましたが、静的ファイルのリソースを取得する際にの404エラーについて、エラー捕獲用のコンポーネントを用意しました。
 
 :::details AppErrorComponent.tsx
 ```tsx
@@ -548,7 +544,7 @@ function AppErrorComponent({ error }) {
       console.log('reloading...');
       // prod環境以外はデバッグのために画面リロードしない
       if (isProd) {
-        window.location.reload();
+        window.location.reload(); // もしくはトップページへ遷移する
       }
     }
   }, [error, isProd]);
@@ -559,7 +555,7 @@ function AppErrorComponent({ error }) {
 ```
 :::
 
-ここのポイントとして、エラーを捕獲したところで、ユーザーにエラーの画面を見せず、何もレンダーリングしないまま、リロードを行うところです。
+ここのポイントとして、エラーを捕獲したところで、ユーザーにエラーの画面を見せず、何もレンダーリングしないまま、リロードを行うところです。もちろん、案内用の画面と「戻る」ボタンの用意もありですが、シンプルにエラーを隠したい気持ちがあるので、何もレンダーリングしない方針にしています。
 
 リロードを行うことによって、`index.html`がキャッシュされないため、新しいバージョンが取得できるようになり、エラーはユーザーに見せずに済むことです。
 
@@ -576,11 +572,9 @@ function AppErrorComponent({ error }) {
 
 ## 解決トライ4ー複数バージョンのファイルを提供
 
-これまで問題は解決されているはずですが、万が一を防ぐために、実は別の対策も打っていました。というのは、更新検知のポーリングは、1分間隔で起きるため、どうしてもタイミングが悪く、その間隔中にリリースがあって、検知できず例のエラーになることがあり得ます。
+これまで問題はほぼ解決されているのですが、万が一を防ぐために、実は別の対策も打っていました。というのは、更新検知のポーリングは、1分間隔で起きるため、どうしてもタイミングが悪く、その間隔中にリリースがあって、検知できず例のエラーになることがあり得ます。
 
 この問題の根源で言えば、新しいバージョンのリリースによって、**必要なファイルがなくなっている**ところにあるので、逆に考えると、**古いファイルを新しいリリースによって削除されないようにすれば良い**、とも考えられます。
-
-もちろん、時にバグ修正などの関係で古いファイルは削除したいのですが、そのケースも備えて対処したいところです。
 
 ただ、firebase hostingにはそういう機能がないため、ここで複数のリリースのファイルを同時に提供する方法をまとめます。
 
@@ -618,7 +612,7 @@ function AppErrorComponent({ error }) {
 
 ### 実装
 
-これらのAPIをどこから実行するのか、との議論もありますが、今回のプロジェクトでは、`oclif`を利用してCLIコマンドを作成していたため、そのまま踏襲してコマンドを作成しました。ワークフロー実行中は、こららのCLIコマンドを実行するだけで目的は達成できます。
+これらのAPIをどこから実行するのか、との議論もありますが、今回のプロジェクトでは、[oclif](https://oclif.github.io/)を利用してCLIコマンドを作成していたため、そのまま踏襲してコマンドを作成しました。ワークフロー実行中は、こららのCLIコマンドを実行するだけで目的は達成できます。
 
 細かい実装を省いて、インターフェースと一部要注意な部分のみ提示します。
 
@@ -926,9 +920,9 @@ export default class Purge extends Base {
 
 このトライでできたこととして
 
-- 過去のリリースのファイルと最新のリリースのファイルを同時にホストすること
-- 自動化のワークフローを利用し、upload -> merge -> purgeの流れで整理できたこと
-- oclifのCLIコマンドによって、手動実行が必要な場面にも対応可能になること
+- 過去のリリースのファイルと最新のリリースのファイルを同時にホストする
+- 自動化のワークフローを利用し、upload -> merge -> purgeの流れでリリースしたいファイルと削除したいファイルの整理
+- oclifのCLIコマンドによって、手動実行が必要な場面にも対応
 
 
 ## 終わりに
@@ -939,6 +933,6 @@ export default class Purge extends Base {
 
 結構時間をかけて、調査と実験の繰り返しを経て、様々な視点から対策を打つようにしました。この前無事にリリースでき、おかげでその後は早朝深夜のメンテナンス時間なしの、ヘルシーなメンタルに戻りました（笑）。SPAのリリースで、同じ問題で悩んでいる方の役に立てると嬉しく思います。
 
-最後に、今回の問題を立ち向かう際にチームリーダー@lumaさんから多くサポートとレビューをいただきました。特に複数のバージョンのファイルを提供する設計において貴重なアイディアとアドバイスのおかげで今の形で治っています。この場を借りて感謝したいと思います。
+最後に、今回の問題を立ち向かう際にチームリーダー[@luma](https://zenn.dev/luma)さんから多くサポートとレビューをいただきました。特に複数のバージョンのファイルを提供する設計において貴重なアイディアとアドバイスのおかげで今の形で治っています。この場を借りて感謝したいと思います。
 
 
