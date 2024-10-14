@@ -83,8 +83,6 @@ Object.defineProperty(person, "age", {
 
 また、上記の例で定義されたプロパティの属性は`Object.getOwnPropertyDescriptor`で確認することができます。
 
-なぜ、`OWN`が強調されるかは、一旦伏せておいて、後の節で自明になります。
-
 ### オブジェクトを作る
 
 オブジェクトを作るには、コンストラクター関数や、`Class`, `Object.assign`, `Object.create`, `{}`で付与するなど、様々な方法があります。
@@ -129,16 +127,15 @@ let p2 = {name; 'p2'};
 
 ### `[[Prototype]]`と`prototype`
 
-`new`演算子でオブジェクト作る時に言及した、`[[Prototype]]`と`prototype`と何が違うのか
+`new`演算子でオブジェクト作る時に言及した、`[[Prototype]]`と`prototype`と何が違うのかというと、
 
-- 前者はオブジェクトの内部属性として、*他のオブジェクト*へのポインターになり、呼び出すには`__proto__`を使います（`[[]]`は内部属性のため直接アクセスできない）
-- 後者はとあるオブジェクトを*インスタンス化*するために必要なブループリント・モデルになります
-- *他のオブジェクト*というのは、まさに上記のブループリントのことです
-- 例えば`p1`の場合だと、`p1`の`[[Prototype]]`は、`Person.prototype`へ指していて、`p1.__proto__ === Person.prototype`となります
+- `[[Prototype]]`はオブジェクトの内部属性として、*他のオブジェクト*へのポインターになり、呼び出すには`__proto__`を使います
+  - `[[]]`は内部属性のため直接アクセスできないが、`[[Prototype]]`と`__proto__`が同一だと考えて構いません
+- `prototype`はとあるオブジェクトを*インスタンス化*するために必要なブループリント・モデルになります
+- 新しいオブジェクトを作る際に、上記のブループリントの`prototype`プロパティへ`[[Prototype]]`で紐つきます
+  - 例えば`p1`の場合だと、`p1`の`[[Prototype]]`は、`Person.prototype`へ指していて、`p1.__proto__ === Person.prototype`となります
 
-これって、なんの意味があるのか、と言われると、同じ仕組みが自作のオブジェクトだけではなく、ビルドインの全てのオブジェクトに存在するので、この`[[Prototype]]`のポインターによって全てのオブジェクトは実は繋いていることになります。
-
-例えば、
+もちろん、同じ仕組みが自作のオブジェクトだけではなく、ビルドインの全てのオブジェクトに存在します。さらに`primitive`タイプの場合は、ラップオブジェクト（`Number`, `String`, `Boolean`など）の`prototype`と繋いでいます。最終的に、全てのオブジェクトが`Object.prototype`と繋ぐことになります。
 
 ```js
 let arr = [1,2,3];
@@ -148,53 +145,87 @@ const fn = () => {}
 assert(fn.__proto__ === Function.prototype);
 
 const a = 1;
-assert(a.__proto__ === Number.prototype);
+assert(a.__proto__ === Number.prototype); // ES5以前ではエラーになる
 
 const obj = {};
 assert(obj.__proto__ === Object.prototype);
 // ...
-
-assert(Function.prototype.__proto__ === Object.prototype)
-assert(Person.prototype.__proto__ === Object.prototype)
-assert(Array.prototype.__proto__ === Object.prototype)
-// ...
 ```
+
+図で表現すると、
 
 ![](https://storage.googleapis.com/zenn-user-upload/9f622a3cafe1-20240927.png)
 
-シンプルにまとめると、
 
-- 全てのビルトインのオブジェクトには、メソッドをprototypeに紐ついている
-  - primitiveタイプの場合は、ラップオブジェクト（Number, String, Booleanなど）のprototypeに頼っている
-- オブジェクト（もしくはインスタンス）はデータだけを保存する
-- インスタンスから`__proto__`プロパティを経由して、オブジェクトのprototypeに紐つくメソッドをアクセスし、同じメソッドをシェアすることが可能
+### prototype chain
 
-
-この仕組みで何がすごいかというと、ポインターで指しているプロトタイプのプロパティはアクセスできるからです。例えば、`arr`を作る際に、別に`fitler`, `map`などのプロパティ定義していないですが、`arr.fitler(...)`は使えるようになります。
-
-これは、`Array.prototype`から*継承*しているようにも見えますが、厳密に言えば継承の枠組みではなく、言葉で表現すると代用・代理に近いかもしれん。例えば、
+上記の図では多少理解できるかもしれませんが、なぜ`chain`と呼ばられるというと、下記の例でよりわかりやすいくなると思います。
 
 ```js
-let obj = {
-    0: 'a',
-    1: 'b',
-    length: 2
+class A {
+    sayA {
+        console.log('A')
+    }
+    sayHi {
+        console.log('Hi! I am A')
+    }
 }
 
-obj.join = Array.prototype.join
-// もしくは、obj.__proto__ = Array.prototype
+class B extends A {
+    sayB {
+        console.log('B')
+    }
+    sayHi {
+        console.log('Hi! I am B')
+    }
+}
 
-console.log(obj.join(',')) // 'a, b'
+
+class C extends B {
+    sayC {
+        console.log('C')
+    }
+    sayHi {
+        console.log('Hi! I am C')
+    }
+}
 ```
 
-というようなことができます。`obj`は`Array`を*継承*しているかどうかと言われると、他のOOP言語の視点からNOかと思います。JSのprototypeを活用することで、オブジェクト間のメソッド借用が可能になります。これは明らかに継承の枠組みを超えていると思います。
+上記の例で言えば、`__proto__`の方向は、`C -> B -> A -> Object`になっているわかります。
+
+```js
+const a = new A();
+const b = new B();
+const c = new C();
+
+c.sayC() // c -> sayCはC.prototypeにある
+c.sayB() // b -> Bのメソッドも使える
+c.sayA() // a -> Aのメソッドも使える
+c.sayHi() // Hi! I am C -> 同じメソッドは"上書き"される
+
+assert(A.prototype.isPrototypeOf(a))
+assert(a instanceof Object)
+assert(b instanceof a)
+assert(c instanceof b)
+assert(c.__proto__ === C.prototype)
+assert(c.__proto__.__proto__ === B.prototype)
+assert(c.__proto__.__proto__.__proto__ === A.prototype)
+assert(c.__proto__.__proto__.__proto__.__proto__ === Object.prototype)
+```
+
+この仕組みで何がすごいかというと、
+
+- インスタンスがポインター`__proto__`で指している`prototype`のプロパティにアクセスできるため、**インスタンスの間にプロパティの共有**ができる
+- *継承*する親のメソッドも`__proto__`プロパティを利用し、`prototype chain`に辿って使うことができるため、**子が親からプロパティの継承**ができるだけではなく、**メソッドの上書き**することも可能
+
+もちろん、ここの*上書き*は本当に親クラスのメソッドの上書きというより、prototypeにプロパティが存在する場合優先順位が高く、prototype chain上の同じプロパティへのアクセスが遮られる(shadow)とも言います。この仕組みによって、OOPのポリモーフィズムも実現できるようになります。
+
+プロパティがインスタンスに存在するかどうかは、`Object.hasOwnProperty`メソッドで判定することができます。それに対して、`in`を使う場合はインスタンスに存在しなくても、prototype chainで見つけることができれば判定は`true`になるのです。
 
 
 ### `constructor`とは
 
-そもそも、コンストラクターとはなんだろう。ES6から`class`を使って他のOOP言語のように「クラス」を定義することができるようになりました。
-
-例えば、
+そもそも、コンストラクターとはなんだろう。ES6から`class`を使って他のOOP言語のように「クラス」を定義することができるようになりました。例えば、
 
 ```js
 class Person {
@@ -233,9 +264,15 @@ const p2 = new p1.constructor('2') // も一応可能
 
 ただ要注意したいのは、デフォルトの`constructor`が、関数の`prototype`と紐ついていますが、これは`writable`なプロパティなので、入れ替えることが可能です。もし`Person.prototype = {}`とかにしてしまうと、デフォルトの`constructor`がなくなります。`prototype`を仮にいじる必要がある時は、破壊変更になるかどうかは気をつけた方が良いでしょう。
 
+また、`prototype`にメソッドを含めてプロパティを追加することができますが、通常ステートはインスタンスに持たせるため、本当に共有したいプロパティ以外は、コンストラクター関数の中で`this`に付与した方が良いでしょう。
+
+```JavaScript
+Person.prototype.name = 'John' // -> 通常はアンチパターン、全てのPersonインスタンスにこの値へのアクセスがあります
+```
+
 ちょっと待って、`p1.constructor`はわかったけど、`Person.constructor`はなんなのか、`Person.prototype.constructor`と一緒なのか、どうだろう。
 
-前の節の`prototype chain`を思い出してください。`p1`は`Person`から作ったオブジェクトで、`Person`は関数なので、`Function`というオブジェクトから作られた関数にすぎません。なので、`Person.constructor === Function`となります。`prototype chain`の意味で言えば、*クラス*や*インスタンス*との概念がJSには合わない側面があり、このようにクラスが同時にインスタンスにもなっている結論になってしまうからです。
+前の節の`prototype chain`を思い出してください。`p1`は`Person`から作ったオブジェクトで、`Person`は関数なので、`Function`というオブジェクトから作られた関数にすぎません。なので、`Person.constructor === Function`となります。
 
 節の冒頭の疑問に戻るが、そもそもconstructorはなんだろうというと、結局関数にすぎません（`p1.constructor === Person`を考えてください）。正しくインスタンスを作るために（`this`を作られたオブジェクトにバインディングするために）`new`を使う必要がある、というくらいの特別要件がありますが、本質的には関数です。そのため、
 
@@ -249,7 +286,7 @@ Person.call(o, "Doe"); // oにthisが紐つく
 o.sayHi() // 'Hi! I am Doe'
 ```
 
-とのように、関数として使えるし、使い方次第で`this`のバインディングを変えることが可能です（`this`について[こちらの記事](https://zenn.dev/convers39/articles/e0b7a26859f999#%E5%84%AA%E5%85%88%E9%A0%86%E4%BD%8D)に参考してください）。無論、`new`と併用することがわかりやすくておすすめです。
+とのように、関数として使えるし、使い方次第で`this`のバインディングを変えることが可能です（`this`について[こちらの記事](https://zenn.dev/convers39/articles/e0b7a26859f999#%E5%84%AA%E5%85%88%E9%A0%86%E4%BD%8D)に参考してください）。もちろん、ES6の`class`を使う場合は、`new`と併用することが必要になるため基本このようのことは起こりませんが、あくまでも`constructor`の本質を理解するためのハックに過ぎません。
 
 ### `class`とコンストラクター関数の違い
 
@@ -262,9 +299,99 @@ o.sayHi() // 'Hi! I am Doe'
 
 ## 継承と代理
 
+### JSの継承
+
+prototype chainを節には、プロパティの継承と上書き（アクセス遮断）ができるとわかりました。ただこれだけでは継承には成り立ちません。というのは、メソッド以外のプロパティも存在するため、
+
+- 親と子のインスタンスを作る際に別々でステートを保持すること
+- 子のインスタンスを作る際に、親にあるステートを継承すること
+- インスタンスの間にステートの干渉がないこと
+
+といった条件を満たす必要があります。prototype chainだけでは、仮に`Person.prototype.name = 'John'`をやってしまうと、インスタンス間のステート干渉が問題になってしまいます。
+
+ES6以前では、さまざまなハックテクニックを通してこの問題を解決しようとしていました。
+
+- constructor stealing/borrowing
+- combination inheritance (pseudoclassical inheritance) = constructor stealing + prototype chain
+- prototypal inheritance
+- parasitic inheritance など
+
+ここでは`constructor stealing` + `prototype chain`のやり方を説明します。
+
+```javascript
+function Person(name) {
+    this.name = name
+    this.friends = ['Jay', 'John', 'Jane']
+}
+
+Person.prototype.sayHi = function () {
+    console.log('Hi, I am ' + this.name)
+}
+
+function Engineer(name, lang) {
+    Person.call(this, name) // -> Personにthisを渡し、nameを付与する a.k.a constructor stealing/borrowing
+    this.lang = lang
+}
+
+Engineer.prototype = new Person() // -> Personのメソッドを継承する
+
+Engineer.prototype.sayLang = function () { // -> このタイミングで追加すれば
+    console.log('Hi, I am a ' + this.lang + ' engineer' )
+}
+
+```
+
+- `Person.call(this, name)`を通して、`Person`の初期化を行い、さらに`Engineer`のインスタンスオブジェクト（`this`）に紐つくことで、`this.friends`のようなレファレンスタイプのプロパティがコピされ、インスタンス間の干渉を避ける
+- `Engineer.prototype`に`new Person()`を付与することで、`Person`のプロトタイプと、`Engineer`のプロトタイプと分けると同時に、`Person`にあるメソッドを`Engineer`に使わせる
+
+
+ES6以降は、`Class`を利用することで継承がだいぶシンプルになりました。`prototype`のアサインとコンストラクター借用の部分は`extends`と`super`で解消されています。本質的には上記のように`prototype`の仕組みを利用しています。
+
+```javascript
+class Person {
+    constructor(name) {
+        this.name = name
+        this.friends = ['Jay', 'John', 'Jane']
+    }
+    // ...
+}
+
+class Engineer extends Person { // -> Engineer.prototype = new Person() に相当
+    constructor(name, lang) {
+        super(name); // -> Person.constructor(name) / Person.call(this, name) に相当
+        this.lang = lang;
+    }
+    // ...
+}
+
+```
+
+
 ### prototypeが解決したい問題
 
 ### 継承、組合せとの区別
+
+実際に、prototypeの方式は*継承*の機能をしているように見えます。継承はOOPの三大柱の一つとしてOOP観点からは重要視されているが、その中心にあるのは、プログラムをより小さいパート（クラス）に分けて、各自のステートを管理し、お互いの通信（messaging）を行うことを通して機能を実現させ、複雑度を下げてより管理可能な構造にすることだと思っています。継承との違いというと、prototype方式ではデータのステートのみインスタンスに持たせていて、通常の継承方式ではデータとメソッド両方インスタンスに持たせているところにあります。
+
+1点目は、例えば、`arr`を作る際に、別に`fitler`, `map`などのプロパティ定義していないですが、`arr.fitler(...)`は使えるようになります。
+
+これは、`Array.prototype`から*継承*しているようにも見えますが、厳密に言えば継承の枠組みではなく、言葉で表現すると代用・代理に近いかもしれん。例えば、
+
+```js
+let obj = {
+    0: 'a',
+    1: 'b',
+    length: 2
+}
+
+obj.join = Array.prototype.join
+// もしくは、obj.__proto__ = Array.prototype
+
+console.log(obj.join(',')) // 'a, b'
+```
+
+というようなことができます。`obj`は`Array`を*継承*しているかどうかと言われると、他のOOP言語の視点からNOかと思います。JSのprototypeを活用することで、オブジェクト間のメソッド借用が可能になります。これは明らかに継承の枠組みを超えていると思います。
+
 
 ## 実運用の注意点
 
