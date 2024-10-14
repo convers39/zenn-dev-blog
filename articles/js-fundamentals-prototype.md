@@ -290,11 +290,11 @@ o.sayHi() // 'Hi! I am Doe'
 
 ### `class`とコンストラクター関数の違い
 
-- `enumerable`
+よくある言い方として、`class`とはコンストラクター関数のsyntax sugarに過ぎない、と。`class`によって複雑な`prototype`を弄る操作はカプセル化され、他のOOP言語からJSに乗り換える場合は素早く使えるようになります。一方で、両者は完全に一致しているわけではなく、オブジェクトの属性の文脈では少なくとも以下のような違いがあります。
 
-- `[[IsClassConstructor]]: true`
-
-- `use strict`
+- `enumerable` オブジェクトのプロパティにはイテレート可能かどうかについて`enumerable`で決めていますが、`class`で作られる場合、メソッドは全て`enumerable:false`にはなります。通常これは意図通りの挙動で、`for..in`のループにメソッドを出したい場面がほぼないでしょう。
+- `[[IsClassConstructor]]: true` `class`で作られたオブジェクトには`[[IsClassConstructor]]`都の内部属性が存在します。`class`で定義したものを、`new`を使っていない時、内部的に`new.target == undefined`になるため、この内部属性と合わせて`new`なしの作成を禁止しています。
+- `use strict` `class`は常に`strict`モードになります。
 
 
 ## 継承と委託
@@ -455,13 +455,82 @@ fullstackDev.buildAPI(); // "Charlie is building a powerful API!"
 
 ここは`Developer`から`FrontendDev`、`BackendDev`が継承するようなイメージではなく、`a-able`の機能性の部分（スキル）を抽出しています。`Object.assign`する際に、まず`Object.create`によって`__proto__`を`developer.prototype`へ紐つきます。すると`developer.sayName`が共有されるようになります。フルスタックエンジニアを考える時に、当然FEとBE両方のスキルが必要なので、継承の考え方だと結構厄介なケースになりますが、上記のようにスキルを組み合わせることで簡単に達成できます。
 
-で、これTSなら`interface`を二つ定義して`implements`すれば解決するのでは、と言われるかもしれませんが、インターフェースにはステート保持はなく、実装もないため、多少違いはあります。
-
+組み合わせのパターンについて他の言語には`trait`, `mixins`といったものが相当します。`interface`の場合はステートや実装を保持しない点で`trait`, `mixins`から少し離れますが、機能性の部分を抽出して組み合わせる考え方自体は`interface`にも運用可能です。
 
 ## 実運用の注意点
 
-### prototype pollution
+### `prototype`汚染(pollution)
 
-### `instanceof`
+prototypeの性質を利用することで攻撃者が`Object.prototype`とかを弄ることで、プログラム内の全てのオブジェクトを影響することが可能です。例えば、
+
+```javascript
+Object.prototype.isAdmin = true;
+
+const user = {};
+console.log(user.isAdmin); // true
+```
+
+これは実際にユーザーインプットから起こる可能性があります。`JSON.parse`を行う時に不用意にやられることが考えられると思われます。
+
+```javascript
+const maliciousPayload = JSON.parse('{"__proto__": {"isAdmin": true}, "userId": 1}');
+
+const currentUser = await db.getUser(maliciousPayload.userId)
+const updatedUser = {...currentUser, ...maliciousPayload};
+```
+
+これを防止するために、いくつかの考え方があります。
+
+- コード上は`Object.prototype`のような変更を禁止する（基本当たり前）
+- `__proto__`プロパティのないオブジェクトを作成する（`Object.create(null)`）
+- ユーザーインプットをsanitizeする（例：`obj.hasOwnProperty('__proto__') || obj.hasOwnProperty(constructor)`）
+- オブジェクト操作を外部ライブラリから行う場合、`prototype`汚染に対策しているライブラリーを使う
+
+### 意図しない`prototype`の変更
+
+`Object.prototype`の変更は全てのオブジェクトに影響するため、一番避けたいパターンではあります。それと近い考え方で、ビルトインのオブジェクトの`prototype`も必要がない限りいじらない方が良いでしょう。
+
+ここで主に2つの考え方があります。
+
+- ビルトインから拡張のクラスを作る、例えば
+
+```javascript
+// ❌
+Array.prototype.last = function() {
+    return this[this.length - 1];
+};
+
+// ✅
+class MyArray extends Array {
+    last() {
+        return this[this.length - 1];
+    }
+}
+
+const arr = new MyArray(1, 2, 3);
+console.log(arr.last()); // 3
+
+```
+
+- どうしても`prototype`を弄る場合は、シンボルを利用して潜在的な競合可能性（将来公式で同じAPIが実装されたとか）を避ける、例えば
+
+```JavaScript
+const lastSymbol = Symbol('last');
+Array.prototype[lastSymbol] = function() {
+    return this[this.length - 1];
+};
+
+const arr = [1, 2, 3];
+console.log(arr[lastSymbol]()); // 3
+```
+
+### パフォーマンス
+
+オブジェクトに必要なプロパティがみつからない場合、該当オブジェクトのprototype chain    に辿って探索を行うので、探索のパフォーマンスで言えばこの木の深さと比例します。
+
+正直これで困る場面がまだ会っていませんが、一応対策の考え方として
+
+- 継承というより組み合わせを活用する
+- `hasOwnProperty`を利用して不要な探索を止める
 
 ## まとめ
