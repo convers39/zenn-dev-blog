@@ -297,7 +297,7 @@ o.sayHi() // 'Hi! I am Doe'
 - `use strict`
 
 
-## 継承と代理
+## 継承と委託
 
 ### JSの継承
 
@@ -367,15 +367,25 @@ class Engineer extends Person { // -> Engineer.prototype = new Person() に相�
 ```
 
 
-### prototypeが解決したい問題
+### OOP言語の継承との区別
 
-### 継承、組合せとの区別
+実際に、prototypeの方式は*継承*の機能をしているように見えます。継承はOOPの三大柱の一つとしてOOP観点からは重要視されているが、その中心にあるのは、プログラムをより小さいパート（クラス）に分けて、各自のステートを管理し、お互いの通信（messaging）を行うことを通して機能を実現させ、複雑度を下げてより管理可能な構造にすることだと思っています。
 
-実際に、prototypeの方式は*継承*の機能をしているように見えます。継承はOOPの三大柱の一つとしてOOP観点からは重要視されているが、その中心にあるのは、プログラムをより小さいパート（クラス）に分けて、各自のステートを管理し、お互いの通信（messaging）を行うことを通して機能を実現させ、複雑度を下げてより管理可能な構造にすることだと思っています。継承との違いというと、prototype方式ではデータのステートのみインスタンスに持たせていて、通常の継承方式ではデータとメソッド両方インスタンスに持たせているところにあります。
+JavaScriptにおけるprototype方式の*継承*と他のOOP言語における継承との違いというと、
 
-1点目は、例えば、`arr`を作る際に、別に`fitler`, `map`などのプロパティ定義していないですが、`arr.fitler(...)`は使えるようになります。
+| 相違点 | 通常のOOP言語 | JSの実現 |
+| --------------- | --------------- | --------------- |
+| メンタルモデル | クラスとのブループリントからインスタンスを作る | prototype chainで直接他のオブジェクトと繋ぐ |
+| オブジェクト作成 | クラスからオブジェクトを作る | コンストラクター関数からオブジェクトを作る |
+| インスタンスステート保持 | メソッドやデータ両方保持する | データのみ保持する |
+| 継承仕組み | メソッドを含めたプロパティをコピーする | prototypeにあるメソッドを共有する |
+| ポリモーフィズム仕組み | 親クラスと同名のメソッドを上書きする | prototype chainにある同名メソッドを実装し、アクセスを遮断する |
 
-これは、`Array.prototype`から*継承*しているようにも見えますが、厳密に言えば継承の枠組みではなく、言葉で表現すると代用・代理に近いかもしれん。例えば、
+
+特に継承について、親と子という階層の先入観が含まれているが、`Kyle Simpson`氏が曰く、JSでは`OLOO a.k.a. Objects Linked to Other Objects`と読んだ方がふさわしい。
+
+例えば、`arr`を作る際に、別に`fitler`, `map`などのプロパティ定義していないですが、`arr.fitler(...)`は使えるようになります。
+これは、`Array.prototype`から*継承*しているようにも見えますが、厳密に言えば継承の枠組みではなく、言葉で表現すると代用・代理に近いかもしれん（公式の言葉では次節の委託delegationになる）。例えば、
 
 ```js
 let obj = {
@@ -385,12 +395,67 @@ let obj = {
 }
 
 obj.join = Array.prototype.join
-// もしくは、obj.__proto__ = Array.prototype
+// もしくは
+obj.__proto__ = Array.prototype
 
 console.log(obj.join(',')) // 'a, b'
+console.log(Array.isArray(obj)) // false, obj.__proto__ = Array.prototypeの場合ならtrue
 ```
 
-というようなことができます。`obj`は`Array`を*継承*しているかどうかと言われると、他のOOP言語の視点からNOかと思います。JSのprototypeを活用することで、オブジェクト間のメソッド借用が可能になります。これは明らかに継承の枠組みを超えていると思います。
+というようなことができます。`obj`は`Array`を*継承*しているかどうかと言われると、他のOOP言語の視点からNOかと思います。objはオブジェクトのままで配列のメソッドを借りているので、厳密な誰が親か誰が子かの関係はありません。このようなオブジェクト間のメソッド借用が明らかに継承の枠組みを超えていると思います。
+
+### 委託組み合わせ（delegation composition）
+
+さて、JSの継承について少しみてきましたが、実は継承について、よく`composition over inheritance`と言われています。コンポジションまたは組み合わせについて[別の記事](https://zenn.dev/convers39/articles/83dd5898d4d798#%E7%B6%99%E6%89%BF)で少し書いたことがありますが、シンプルにいうと、`is-a`の継承関係を求めずに、`a-able`という、機能性を求める観点からのコード再利用となります。特に、JSの場合はマルチ継承ができないため、仮に複数のオブジェクトから借用したい時に上記の継承パターンが無力になります。
+
+ここでJSの`prototype`の特性に合わせた組み合わせ（delegation composition）について紹介します。ここでウェブアプリ開発のロールを例に考えてみてください。
+
+```javascript
+// 開発者のオブジェクト
+const developer = {
+    name: '',
+    sayName() {
+        console.log(`Hi, I am ${this.name}`);
+    }
+};
+
+// フロントエンド開発に必要なスキル
+const frontendSkills = {
+    buildUI() {
+        console.log(`${this.name} is building a beautiful UI!`);
+    }
+};
+
+// バックエンド開発に必要なスキル
+const backendSkills = {
+    buildAPI() {
+        console.log(`${this.name} is building a powerful API!`);
+    }
+};
+
+// フロントエンドエンジニア
+const frontendDev = Object.assign(Object.create(developer), frontendSkills);
+frontendDev.name = 'Alice';
+frontendDev.sayName(); // "Hi, I am Alice"
+frontendDev.buildUI(); // "Alice is building a beautiful UI!"
+
+// バックエンドエンジニア
+const backendDev = Object.assign(Object.create(developer), backendSkills);
+backendDev.name = 'Bob';
+backendDev.sayName(); // "Hi, I am Bob"
+backendDev.buildAPI(); // "Bob is building a powerful API!"
+
+// フルスタックエンジニア
+const fullstackDev = Object.assign(Object.create(developer), frontendSkills, backendSkills);
+fullstackDev.name = 'Charlie';
+fullstackDev.sayName(); // "Hi, I am Charlie"
+fullstackDev.buildUI(); // "Charlie is building a beautiful UI!"
+fullstackDev.buildAPI(); // "Charlie is building a powerful API!"
+```
+
+ここは`Developer`から`FrontendDev`、`BackendDev`が継承するようなイメージではなく、`a-able`の機能性の部分（スキル）を抽出しています。`Object.assign`する際に、まず`Object.create`によって`__proto__`を`developer.prototype`へ紐つきます。すると`developer.sayName`が共有されるようになります。フルスタックエンジニアを考える時に、当然FEとBE両方のスキルが必要なので、継承の考え方だと結構厄介なケースになりますが、上記のようにスキルを組み合わせることで簡単に達成できます。
+
+で、これTSなら`interface`を二つ定義して`implements`すれば解決するのでは、と言われるかもしれませんが、インターフェースにはステート保持はなく、実装もないため、多少違いはあります。
 
 
 ## 実運用の注意点
