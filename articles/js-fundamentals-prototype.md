@@ -2,15 +2,18 @@
 title: "JS基礎いろいろーPrototype"
 emoji: "⛓️"
 type: "tech" # tech: 技術記事 / idea: アイデア
-topics: ["javascript"]
-published: false
+topics: ["javascript", "prototype"]
+published: true
 ---
 
 ## クイズ
 
+久々のJS基礎いろいろシリーズです。
+
 以下のアウトプットが正しく言えるかどうか、まずテストしてみましょう。
 
 ```javascript
+// 問題1
 function Vehicle() {}
 Vehicle.prototype.wheels = 4;
 
@@ -25,6 +28,7 @@ Vehicle.prototype = { wheels:100 }
 console.log(car.wheels); // ?
 console.log(anotherCar.wheels); // ?
 
+// 問題2
 const obj1 = { a: 1 };
 const obj2 = Object.create(obj1);
 const obj3 = Object.create(obj2);
@@ -35,23 +39,29 @@ console.log(obj3.a); // ?
 delete obj2.a;
 console.log(obj3.a); // ?
 
-c1.count++;
-console.log(c1.count); // ?
-console.log(c2.count); // ?
-
+// 問題3
+function F() {}
 const f = new F()
-console.log(f.__proto__) // ?
-console.log(f.prototype) // ?
+f.__proto__ ==  ?
+f.prototype ==  ?
+F.__proto__ ==  ?
+F.prototype ==  ?
 
-class C {
+// 問題4
+class C extends F {
     constructor () {}
 }
 const c = new C()
-console.log(c.__proto__)
-console.log(c.constructor)
+c.__proto__  == ?
+c.constructor == ?
+c.__proto__.__proto__  == ?
+c.__proto__.__proto__.__proto__  == ?
+C.__proto__  == ?
+C.constructor == ?
+C.prototype.constructor == ?
 ```
 
-答えはreplで見るのが早いが、この記事ではWHYの部分を少し探りたいと思います。
+答えはブラウザーで試すかGPT先生に聞くのが早いが、この記事ではWHYの部分を少し探りたいと思います。
 
 ## JSのオブジェクト
 
@@ -166,7 +176,7 @@ function Person(name) {
 ```JavaScript
 
 let p1 = new Person('p1');
-let p2 = {name; 'p2'};
+let p2 = {name: 'p2'};
 
 class Person {
     constructor(name) {
@@ -276,22 +286,29 @@ assert(c.__proto__.__proto__.__proto__.__proto__ === Object.prototype)
 
 この仕組みで何がすごいかというと、
 
-- インスタンスのオブジェクトがポインター`__proto__`で指している`prototype`のプロパティにアクセスできるため、**オブジェクトの間にプロパティの共有**ができる
-- *継承*する親のメソッドも`__proto__`プロパティを利用し、`prototype chain`に辿って使うことができるため、**子オブジェクトが親オブジェクトからプロパティの継承**ができるだけではなく、**メソッドの上書き**することも可能
+- インスタンスのオブジェクトがポインター`__proto__`で指している`prototype`のプロパティにアクセスできるため、**オブジェクトの間にprototypeにあるプロパティの共有**ができる（水平の視点）
+- *継承*する親のメソッドも`__proto__`プロパティを利用し、`prototype chain`に辿って使うことができるため、**子オブジェクトが親オブジェクトからプロパティの継承**ができるだけではなく、**メソッドの上書き**することも可能（垂直の視点）
 
 もちろん、ここの*上書き*は本当に親クラスのメソッドの上書きというより、`prototype`にプロパティが存在する場合優先順位が高く、`prototype chain`上の同じプロパティへのアクセスが遮られる(shadow)とも言います。この仕組みによって、継承だけではなく、ポリモーフィズムも実現できるようになります。
 
 ### `constructor`とは
 
-そもそも、コンストラクターとはなんだろう。先ほどのコンストラクター関数と実質同じで、`new Person('p3')`を行う時に、`Person`という**関数**を`new`で呼び出し、`constructor`メソッドに定義されているものが実行されます。クラスに存在するメソッドは、`Person.prototype`に紐つくようになります。そのため、JSの`class`何か新しい仕組みを作っているわけではなく、根底にはオブジェクトの作成になっています。
+そもそも、「コンストラクター」とはなんだろう。クラスの`constructor`メソッドは、コンストラクター関数と実質同じで、`new Person('p3')`を行う時に、`Person`という**関数**を`new`で呼び出し、`constructor`メソッドに定義されているものが実行されます。
 
-それで、`constructor`メソッドも同じく、`Person.prototype`に紐ついています。これは、全ての関数の`prototype`にデフォルト値として、自分自身に指すオブジェクトとなっているからです。
+クラスに存在するメソッドは、`constructor`も含めて、`Person.prototype`に紐つくようになります。JSにおいて関数を定義する際に`function.prototype.constructor`にデフォルト値として、自分自身に指すオブジェクトとなっているためです。
 
-```js
-console.log(typeof Person) // function
-console.log(Person === Person.prototype.contructor) // true
-// つまり、下記がPerson定義時のデフォルトの挙動となる
+```javascript
+// 下記がPerson定義時のデフォルトの挙動となる
 Person.prototype = { constructor: Person }
+
+// 他の関数も見てみると
+function fn() {}
+
+assert(fn.prototype.contructor === fn)
+assert(Person.prototype.contructor === Person)
+assert(Array.prototype.constructor === Array)
+assert(Object.prototype.constructor === Object)
+// ...
 ```
 
 インスタンス化する際に、インスタンスの`constructor`プロパティが、クラスの関数となります。
@@ -314,7 +331,7 @@ const p2 = new p1.constructor('2') // も一応可能
 Person.prototype.name = 'John' // -> 通常はアンチパターン、全てのPersonインスタンスにこの値へのアクセスがあります
 ```
 
-ちょっと待って、`p1.constructor`はわかったけど、`Person.constructor`はなんなのか、`Person.prototype.constructor`と一緒なのか、どうだろう。
+ちょっと待って、`p1.constructor`はわかったけど、`Person.constructor`はなんなのか。
 
 前の節の`prototype chain`を思い出してください。`p1`は`Person`から作ったオブジェクトで、`Person`は関数なので、`Function`というオブジェクトから作られた関数にすぎません。なので、`Person.constructor === Function`となります。
 
@@ -331,6 +348,8 @@ o.sayHi() // 'Hi! I am Doe'
 ```
 
 とのように、関数として使えるし、使い方次第で`this`のバインディングを変えることが可能です（`this`について[こちらの記事](https://zenn.dev/convers39/articles/e0b7a26859f999#%E5%84%AA%E5%85%88%E9%A0%86%E4%BD%8D)に参考してください）。
+
+結局、JSの`class`何か新しい仕組みを作っているわけではなく、根底には関数を通してオブジェクトを作成することになっています。
 
 ### `instanceof`
 
@@ -367,13 +386,13 @@ JSにはオブジェクトを作る際に様々な方法が存在します。こ
 
 | 方法 | `[[Prototype]]`紐付き | ユースケース | 補足 |
 | --------------- | --------------- | --------------- | --------------- |
-| class | ✅ | OOP感覚のクラスとインスタンスのメンタルモデルでコーディングする時 | OOPの時の基本唯一正解 |
-| new + Function | ✅ | `class`以前のOOPやりたい時のOld Sytle | `new`有無で挙動がだいぶ変わる(`this`) |
-| Object.create | ✅ | 任意のオブジェクトと紐つく時 | `create`に渡されたオブジェクトに紐付ける |
-| Object.assign | ❌ | オブジェクトをマージしたい時 | プロパティの上書きや、shallow copyに注意 |
+| `class` | ✅ | OOP感覚のクラスとインスタンスのメンタルモデルでコーディングする時 | OOPの時の基本唯一正解 |
+| `new` + Function | ✅ | `class`以前のOOPやりたい時のOld Sytle | `new`有無で挙動がだいぶ変わる(`this`) |
+| `Object.create` | ✅ | 任意のオブジェクトと紐つく時 | `create`に渡されたオブジェクトに紐付ける |
+| `Object.assign` | ❌ | オブジェクトをマージしたい時 | プロパティの上書きや、shallow copyに注意 |
 | object literal(`{}`) | ✅| シンプルにオブジェクト作りたい時 | `Object.prototype`と紐付ける |
 | `Object()` constructor | ✅ | primitiveタイプのwrapperオブジェクトタイプを取りたい時（特に`BigInt`, `Symbol`） | `new Object()`は挙動が変わる |
-| JSON.parse | ❌ | 名前通りJSONデータをJSオブジェクトにパースしたい時 | prototype汚染要注意 |
+| `JSON.parse` | ❌ | 名前通りJSONデータをJSオブジェクトにパースしたい時 | prototype汚染要注意 |
 
 ユースケースの面で言えば、`class`は結構別軸で他の方法から離れているとも考えられます。次の節では、JSにおけるOOP関連の考え方をみてみたいと思います。
 
@@ -530,6 +549,10 @@ fullstackDev.buildAPI(); // "Charlie is building a powerful API!"
 
 ここは`Developer`から`FrontendDev`、`BackendDev`が継承するようなイメージではなく、`x-able`の機能性の部分（スキル）を抽出しています。`Object.assign`する際に、まず`Object.create`によって`__proto__`を`developer.prototype`へ紐つきます。すると`developer.sayName`が共有されるようになります。フルスタックエンジニアを考える時に、当然FEとBE両方のスキルが必要なので、継承の考え方だと結構厄介なケースになりますが、上記のようにスキルを組み合わせることで簡単に達成できます。
 
+このやり方では注意したいのは、`Object.assign`で複数のオブジェクトをターゲットオブジェクトへコピーする場合、
+- shallow copyになっているため、他のオブジェクトへポイントするプロパティがあるときは、干渉が生じるリスクがあります。
+- 同じプロパティが存在する場合、後にくるものが上書きしていきます。これはマルチ継承のダイアモンド問題という共通問題だが、JSではとにかく最新を取るというシンプルなやり方です。
+
 組み合わせのパターンについて他の言語には`trait`, `mixins`といったものが相当します。`interface`の場合はステートや実装を保持しない点で`trait`, `mixins`から少し離れますが、機能性の部分を抽出して組み合わせる考え方自体は`interface`にも運用可能です（特にtsの場合）。
 
 上記の例を、どうしても`class`で書きたい時にどうすれば良いか、と言われると、コンストラクター関数で継承をやる時のconstructor stealingや、`prototype`プロパティに対してのマージが必要になります。
@@ -555,6 +578,7 @@ class Backend {
 
 class FullstackDeveloper {
     constructor(name) {
+        // constructor stealing
         Frontend.call(this, name);
         Backend.call(this, name);
     }
@@ -567,7 +591,6 @@ class FullstackDeveloper {
 // ここはやはり不可欠、一回で済む
 Object.assign(FullstackDeveloper.prototype, Frontend.prototype, Backend.prototype);
 
-// Usage
 const dev = new FullstackDeveloper('Bob');
 dev.sayHi(); // "Hi, I'm Bob, a fullstack developer!"
 dev.buildUI(); // "Bob is building a beautiful UI!"
@@ -578,7 +601,7 @@ dev.buildAPI(); // "Bob is building a powerful API!"
 
 ## 実運用の注意点
 
-### `prototype`汚染(pollution)
+### prototype pollution
 
 `prototype`の性質を利用することで攻撃者が`Object.prototype`とかを弄ることで、プログラム内の全てのオブジェクトを影響することが可能です。例えば、
 
@@ -645,24 +668,32 @@ const arr = [1, 2, 3];
 console.log(arr[lastSymbol]()); // 3
 ```
 
-### パフォーマンス
-
-オブジェクトに必要なプロパティがみつからない場合、該当オブジェクトのprototype chain    に辿って探索を行うので、探索のパフォーマンスで言えばこの木の深さと比例します。
-
-正直これで困る場面がまだ会っていませんが、一応対策の考え方として
-
-- 継承というより組み合わせを活用する
-- `hasOwnProperty`, `Object.hasOwn`を利用して不要な探索を止める
-
-が挙げられるかなと思います。
-
 ## 終わりに
 
 
 ### クイズのWHY
 
+まずはクイズ問題について少し解説します。
+
+- 問題1では、コンストラクター関数を使って、その`prototype`プロパティを通して`wheels`とのプロパティをオブジェクトに共有しています。インスタンスのオブジェクトの`wheels`は`prototype`にあるため、変更される際は全てのインスタンスに影響されます。また、`prototype`丸ごとアサインしても、ポインターは元の`prototype`に指すため変更はありません。
+- 問題2では、`Object.create`を利用して、obj1, obj2, obj3の間に`__proto__`で紐ついています。`a`は`obj1`にあるが、`obj2`に追加する場合はアクセス遮断されるため値が変わります。また、`delete`を`obj2`ですると、`obj2`の`a`がなくなるが、引き続き`obj1`の値が取れます。
+- 問題3では、コンストラクター関数を作って、そのコンストラクタ関数から作られたオブジェクトとコンストラクタ関数の間の関係が問われています。インスタンスオブジェクトの`__proto__`はコンストラクタ関数の`prototype`プロパティにポイントしていて、さらに関数`F`は`Function`のインスタンスオブジェクトとしてみられることができます。
+- 問題4では、`class`と`extends`を使い、JSの継承を行っています。`__proto__`のポイント先はコンストラクター関数と大差はありません。`instance.constructor`や、`Class.prototype.constructor`プロパティは、そのクラス・関数にポイントしています。最後は`prototype chain`が問われていて、`c -> C.prototype -> F.prototype -> Object.prototype`との順になります。
+
 
 ### テークアウェイ
+
+この記事の内容をシンプルにまとめると、
+
+- プロトタイプはJS言語におけるオブジェクトの間に`targetObj.__proto__ -> sourceObj.prototype`の形で紐付きを加える仕組みである
+- この仕組みを通して、複数のオブジェクトに渡って、プロパティの共有または継承（借用）ができるようになっている
+- コンストラクタ関数と、ES6以降の`class`で作られたクラスは本質的に同じく関数であり、`new`と使うことでインスタンスオブジェクトを作っている
+- オブジェクトを作る方法が様々あるが、`prototype`の紐付きの有無と紐付きの対象あたりで違いが生じているため、ユースケースも多少違う
+- JSは他のOOP言語のメンタルモデルと違い、クラスとインスタンスというより結局全部オブジェクトではあるが、`class`を通してオブジェクトの間に起こったプロトタイプにめぐる複雑さを抽象化し、擬似的なOOPが達成できている
+- 継承より結合度の低い組み合わせの方法が考えられ、JSではプロトタイプを通して複数のオブジェクトからプロパティ（メソッド）を借用する委託組み合わせのパターンができる
+- プロトタイプは`Object.prototype`やビルトインのオブジェクトにも全部繋いているため、セキュリティの観点からプロトタイプ汚染などの問題に注意しなければならない
+
+となります。
 
 ### 参考になった資料
 
@@ -673,3 +704,4 @@ console.log(arr[lastSymbol]()); // 3
 - [You Don't Know JS Yetシリーズ](https://github.com/getify/You-Dont-Know-JS)  Kyle Simpson氏の名作、2nd editionはWIP。多少癖はあるので、↑の方がストレートでわかりやすいかもしれません。主に`objects-classes`をみています。
 - [JavaScript The Definitive Guide 7th Edition](https://www.oreilly.com/library/view/javascript-the-definitive/9781491952016/) 2番目がバイブルならこちらは辞書？的な感じ。主に9章Classesをみています。
 
+多少長くなりましたが、今回のJS基礎いろいろシリーズはこれで。
