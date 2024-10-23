@@ -49,7 +49,9 @@ F.prototype ==  ?
 
 // 問題4
 class C extends F {
-    constructor () {}
+    constructor () {
+        super()
+    }
 }
 const c = new C()
 c.__proto__  == ?
