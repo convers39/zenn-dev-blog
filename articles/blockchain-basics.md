@@ -4,7 +4,10 @@ emoji: "⛓️"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["blockchain", "web3" ]
 published: true
+publication_name: "optimind"
 ---
+
+この記事は、[株式会社オプティマンドアドベントカレンダー2024](https://qiita.com/advent-calendar/2024/optimind) 1日目の記事です。
 
 # blockchain概要
 
