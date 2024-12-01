@@ -1,5 +1,12 @@
+---
+title: "今更のブロックチェーン入門"
+emoji: "⛓️"
+type: "tech" # tech: 技術記事 / idea: アイデア
+topics: ["blockchain", "web3" ]
+published: true
+---
 
-# WHAT
+# blockchain概要
 
 ## 分散型システムの観点
 
