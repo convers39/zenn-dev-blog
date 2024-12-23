@@ -3,7 +3,7 @@ title: "HTTPリクエストの旅ークライエントキャッシュ＆DNSク�
 emoji: "🚅"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["HTTP", "DNS", "Cache"]
-published: false
+published: true
 ---
 
 この記事は[ 株式会社オプティマンドアドベントカレンダー2024 ](https://qiita.com/advent-calendar/2024/optimind) 22日目の記事となります。
