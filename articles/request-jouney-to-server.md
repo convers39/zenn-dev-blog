@@ -183,4 +183,4 @@ DNSサーバーやDNSクエリーのプロセスについても、この本を�
 
 旅の目標がわかったので、次回の記事では、ネットワークに旅立ちするための交通機関（プロトコル）について書きたいと思います。
 
-[^DNSSEC] 関連する技術として、[DNSSEC](https://www.cloudflare.com/learning/dns/dns-security/)も存在します。DNSSECはDNS resolverと、rootサーバーやAuthoritative nameserverのコミュニケーション時のアイデンティティを保証するものになって、DNS cache poinsoning(DNS spoofingとも、キャッシュデータがTTLが切れるまで間違ったもので入れ替える)の攻撃を対処しています。HTTPSやTLSがDNSクエリーの内容を暗号化することに対して、DNSSECは暗号化しません。この機能自体は、resolverが提供するもので、DNS resolverを提供するもののアドレスに設定すると有効になります。HTTPS /TLS暗号化の方は、ブラウザーが提供する機能なので、両者を同時に使うことが可能です。
+[^DNSSEC]: 関連する技術として、[DNSSEC](https://www.cloudflare.com/learning/dns/dns-security/)も存在します。DNSSECはDNS resolverと、rootサーバーやAuthoritative nameserverのコミュニケーション時のアイデンティティを保証するものになって、DNS cache poinsoning(DNS spoofingとも、キャッシュデータがTTLが切れるまで間違ったもので入れ替える)の攻撃を対処しています。HTTPSやTLSがDNSクエリーの内容を暗号化することに対して、DNSSECは暗号化しません。この機能自体は、resolverが提供するもので、DNS resolverを提供するもののアドレスに設定すると有効になります。HTTPS /TLS暗号化の方は、ブラウザーが提供する機能なので、両者を同時に使うことが可能です。
